@@ -19,7 +19,7 @@ source ~/.bashrc
 sudo apt  install jq -y
 
 ###
-TAR_DIR="tar"
+TAR_DIR="/tmp"
 
 for f in "$TAR_DIR"/*.tar; do
   echo "Importing $f ..."

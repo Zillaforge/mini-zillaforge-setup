@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Values.app }}-tls
+type: kubernetes.io/tls
+data:
+{{ (.Files.Glob "tls/*").AsSecrets | indent 2 }}

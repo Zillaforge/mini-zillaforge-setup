@@ -1,0 +1,21 @@
+images:
+  redis: bitnami/redis
+
+redis:
+  app: redis
+  password: password
+  persistentPath: /data/pegasus/redis-v2
+  nodePort: 30377
+  replicas: 3
+
+sentinel:
+  app: redis-sentinel
+  password: sentinel@password
+  masterGroupName: mymaster
+  replicas: 3
+  redisNodes: "redis-1.redis,redis-2.redis,redis-0.redis"
+  staticMaster: ""
+
+nodeAffinityPreset:
+   key: "kubernetes.io/hostname"
+   values: []

@@ -1,0 +1,14 @@
+app: user-portal
+images:
+  portal: image
+environments:
+  API_URL: ""
+  PUBLIC_IP: ""
+  BASE_DOMAIN: 
+
+service:
+  enableNodePort: false
+  externalIPs: []
+  portal:
+    port: 80
+    nodePort: 31010

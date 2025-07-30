@@ -1,0 +1,205 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app }}-deployment
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.app }}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app }}
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+    spec:
+      serviceAccountName: "pegasus-system-admin"  #有輸入kubectl create serviceaccount pegasus-system-admin
+      automountServiceAccountToken: true
+      initContainers:
+      {{- if .Values.images.eventpublishPlugin }}
+      - name: event-publish-plugin
+        image: {{ .Values.images.eventpublishPlugin }}
+        imagePullPolicy: IfNotPresent #Always
+        command: ['/bin/sh', '-c', "cp -r /plugin/* /var/lib/ASUS/pegasusiam/eventpublish"]
+        volumeMounts:
+        - name: eventpublish-plugin-volume
+          mountPath: /var/lib/ASUS/pegasusiam/eventpublish
+        - name: eventpublish-volume
+          mountPath: /plugin/config/eventpublishplugin.yaml
+          subPath: eventpublishplugin.yaml
+      {{- end }}
+      {{- if .Values.images.rmqconvertPlugin }}
+      - name: rmqconvert-plugin
+        image: {{ .Values.images.rmqconvertPlugin }}
+        imagePullPolicy: IfNotPresent
+        command: ['/bin/sh', '-c', "cp /plugin/* /var/lib/ASUS/pegasusiam/eventpublish"]
+        volumeMounts:
+        - name: eventpublish-plugin-volume
+          mountPath: /var/lib/ASUS/pegasusiam/eventpublish
+      {{- end }}
+      {{- if .Values.images.harborPlugin }}
+      - name: harbor-plugin
+        image: {{ .Values.images.harborPlugin }}
+        imagePullPolicy: IfNotPresent
+        command: ['/bin/sh', '-c', "cp /plugin/* /var/lib/ASUS/pegasusiam/eventpublish"]
+        volumeMounts:
+        - name: eventpublish-plugin-volume
+          mountPath: /var/lib/ASUS/pegasusiam/eventpublish
+      {{- end }}
+      {{- if .Values.images.kubernetesPlugin }}
+      - name: kubernetes-plugin
+        image: {{ .Values.images.kubernetesPlugin }}
+        imagePullPolicy: IfNotPresent
+        command: ['/bin/sh', '-c', "cp -r /plugin/* /var/lib/ASUS/pegasusiam/eventpublish"]
+        volumeMounts:
+        - name: eventpublish-plugin-volume
+          mountPath: /var/lib/ASUS/pegasusiam/eventpublish
+      {{- end }}
+      {{- if .Values.images.tainanAuthPlugin }}
+      - name: tainan-ai-sso-plugin
+        image: {{ .Values.images.tainanAuthPlugin }}
+        imagePullPolicy: IfNotPresent
+        command: ['/bin/sh', '-c', "cp /plugin/* /var/lib/ASUS/pegasusiam/authchain"]
+        volumeMounts:
+        - name: authchain-plugin-volume
+          mountPath: /var/lib/ASUS/pegasusiam/authchain
+      {{- end }}
+      {{- if .Values.images.twccAuthPlugin }}
+      - name: twcc-sso-plugin
+        image: {{ .Values.images.twccAuthPlugin }}
+        imagePullPolicy: IfNotPresent
+        command: ['/bin/sh', '-c', "cp /plugin/* /var/lib/ASUS/pegasusiam/authchain"]
+        volumeMounts:
+        - name: authchain-plugin-volume
+          mountPath: /var/lib/ASUS/pegasusiam/authchain
+      {{- end }}
+      {{- if .Values.images.ldapAuthPlugin }}
+      - name: ldap-auth-plugin
+        image: {{ .Values.images.ldapAuthPlugin }}
+        imagePullPolicy: IfNotPresent
+        command: ['/bin/sh', '-c', "cp /plugin/* /var/lib/ASUS/pegasusiam/authchain"]
+        volumeMounts:
+        - name: authchain-plugin-volume
+          mountPath: /var/lib/ASUS/pegasusiam/authchain
+      {{- end }}
+      {{- if .Values.images.grafanaPlugin }}
+      - name: grafana-plugin
+        image: {{ .Values.images.grafanaPlugin }}
+        imagePullPolicy: IfNotPresent
+        command: ['/bin/sh', '-c', "cp -r /plugin/* /var/lib/ASUS/pegasusiam/eventpublish"]
+        volumeMounts:
+        - name: eventpublish-plugin-volume
+          mountPath: /var/lib/ASUS/pegasusiam/eventpublish
+      {{- end }}
+      - name: copy-native-eventpublish
+        image: {{ .Values.images.debugger }}
+        imagePullPolicy: IfNotPresent #Always
+        command: ['/bin/sh', '-c', "cp -r /plugin/* /var/lib/ASUS/pegasusiam/eventpublish"]
+        volumeMounts:
+        - name: eventpublish-plugin-volume
+          mountPath: /var/lib/ASUS/pegasusiam/eventpublish
+        - name: native-eventpublish-volume
+          mountPath: /plugin/config/
+      {{- if .Values.images.NCHCiServiceAuthPlugin }}
+      - name: nchc-iservice-auth-plugin
+        image: {{ .Values.images.NCHCiServiceAuthPlugin }}
+        imagePullPolicy: IfNotPresent
+        command: ['/bin/sh', '-c', "cp /plugin/* /var/lib/ASUS/pegasusiam/authchain"]
+        volumeMounts:
+        - name: authchain-plugin-volume
+          mountPath: /var/lib/ASUS/pegasusiam/authchain
+      {{- end }}
+      containers:
+      - name: pegasus-iam
+        image: {{ .Values.images.iam }}
+        imagePullPolicy: IfNotPresent #Always
+        ports:
+        - containerPort: {{ .Values.service.ports.grpc.port }}
+        - containerPort: {{ .Values.service.ports.ldap.port }}
+        - containerPort: {{ .Values.service.ports.http.port }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/ASUS/iam-global.yaml
+          subPath: pegasus-iam.yaml
+        - name: certificate-volume
+          mountPath: /etc/ASUS/ssl/certs
+        - name: socket-volume
+          mountPath: /run
+        - name: eventpublish-plugin-volume
+          mountPath: /var/lib/ASUS/pegasusiam/eventpublish
+        - name: authchain-plugin-volume
+          mountPath: /var/lib/ASUS/pegasusiam/authchain
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        - name: host-ssl-ca-volume
+          mountPath: /etc/ssl/certs
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.service.ports.http.port}}
+          initialDelaySeconds: 10
+          periodSeconds: 15
+      - name: debugger
+        image: {{ .Values.images.debugger }}
+        imagePullPolicy: IfNotPresent #Always
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        - name: config-volume
+          mountPath: /etc/ASUS/iam-global.yaml
+          subPath: pegasus-iam.yaml
+        - name: certificate-volume
+          mountPath: /etc/ASUS/ssl/certs
+        - name: eventpublish-plugin-volume
+          mountPath: /var/lib/ASUS/pegasusiam/eventpublish
+        - name: host-ssl-ca-volume
+          mountPath: /etc/ssl/certs
+      {{- if .Values.images.filebeat }}
+      - name: filebeat
+        image: {{ .Values.images.filebeat }}
+        command: ['filebeat', '-e', '-strict.perms=false', '--path.config', "/etc/filebeat"]
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        - name: filebeat-config
+          mountPath: /etc/filebeat/filebeat.yml
+          subPath: filebeat.yml
+      {{- end }}
+      volumes:
+      - name: config-volume
+        configMap:
+          name: iam-config
+      - name: eventpublish-volume
+        configMap:
+          name: iam-eventpublish-config
+      - name: native-eventpublish-volume
+        configMap:
+          name: iam-native-eventpublish-config
+      - name: certificate-volume
+        configMap:
+          name: iam-upstream-certificate
+      - name: log-volume
+        emptyDir: {}
+      - name: eventpublish-plugin-volume
+        emptyDir: {}
+      - name: socket-volume
+        emptyDir: {}
+      - name: authchain-plugin-volume
+        emptyDir: {}
+      - name: host-ssl-ca-volume
+        hostPath:
+          path: /etc/ssl/certs
+          type: Directory
+      {{- if .Values.images.filebeat }}
+      - name: filebeat-config
+        configMap:
+          name: {{ .Values.app }}-filebeat-config
+      {{- end}}
+      {{- if .Values.deployment.spec }}
+      {{- toYaml .Values.deployment.spec | nindent 6 }}
+      {{- end }}
+

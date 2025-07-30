@@ -1,0 +1,56 @@
+{{- range $job_name,$job := .Values.jobs }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $.Values.app }}-{{ $job_name }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ $.Values.app }}-{{ $job_name }}
+  replicas: 1 # always 1, do not modify
+  template:
+    metadata:
+      labels:
+        app: {{ $.Values.app }}-{{ $job_name }}
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+    spec:
+      {{- if $.Values.deployment.spec }}
+      {{- toYaml $.Values.deployment.spec | nindent 6 }}
+      {{- end }}
+      serviceAccountName: {{ $.Values.service_account }}
+      automountServiceAccountToken: true
+      containers:
+      - name: {{ $.Values.app }}-{{ $job_name }}
+        image: {{ $.Values.images.vps.name }}:{{ $.Values.images.vps.version }}
+        imagePullPolicy: IfNotPresent
+        command:
+        - "./VirtualPlatformService"
+        - "-c"
+        - "/etc/ASUS/virtual-platform-service.yaml"
+        {{- range $job.cmd }}
+        - {{ . | quote }}
+        {{- end }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/ASUS/virtual-platform-service.yaml
+          subPath: vps.yaml
+        - name: log-volume
+          mountPath: /var/log/ASUS
+      - name: debugger
+        image: {{ $.Values.images.debugger.name }}:{{ $.Values.images.debugger.version }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/ASUS/virtual-platform-service.yaml
+          subPath: vps.yaml
+        - name: log-volume
+          mountPath: /var/log/ASUS
+      volumes:
+      - name: config-volume
+        configMap:
+          name: {{ $.Values.app }}-config
+      - name: log-volume
+        emptyDir: {}
+{{- end }}
+

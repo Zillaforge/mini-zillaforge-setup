@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app }}-deployment
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.app }}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app }}
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+    spec:
+      containers:
+      - name: {{ .Values.app }}
+        image: {{ .Values.images.ldapservice }}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: {{ .Values.service.ports.ldap.port }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/ASUS
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.service.ports.ldap.port }}
+          initialDelaySeconds: 10
+          periodSeconds: 15
+      {{- if .Values.images.debugger }}
+      - name: debugger
+        image: {{ .Values.images.debugger }}
+        volumeMounts:
+        - name: log-volume
+          mountPath: /var/log/ASUS
+      {{- end }}
+      volumes:
+      - name: config-volume
+        configMap:
+          name: {{ .Values.app }}-config
+      - name: log-volume
+        emptyDir: {}
+      imagePullSecrets:
+      - name: regcred
+

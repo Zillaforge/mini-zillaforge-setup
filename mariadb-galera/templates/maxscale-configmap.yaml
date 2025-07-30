@@ -1,0 +1,54 @@
+{{- if .Values.maxscale.enabled }}
+{{- $fullName := include "common.names.fullname" . }}
+{{- $serverList := list }}
+{{- $releaseName := include "common.names.namespace" . }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ printf "%s-maxscale-configmap" (include "common.names.releaseName" .) }}
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+  {{- if .Values.commonLabels }}
+  {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+  {{- end }}
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+data:
+  maxscale.conf: |
+    {{- range $e, $i := until (int .Values.replicaCount) }}
+    {{- $serverList = append $serverList (printf "server%d" $i) }}
+    {{ printf "[server%d]" $i }}
+    type=server
+    address= {{ (printf "%s-%d.%s-headless.%s" $fullName $i $fullName $releaseName) }}
+    port=3306
+    protocol=MariaDBBackend
+    {{ printf "\n" }}
+    {{- end }}
+
+    [Galera-Monitor]
+    type=monitor
+    module=galeramon
+    {{ printf "servers=%s" (join "," $serverList) }}
+    user=root
+    password={{ .Values.rootUser.password }}
+    backend_connect_timeout=10s
+    backend_write_timeout=10s
+    backend_read_timeout=10s
+
+
+    [Galera-Service]
+    type=service
+    router=readwritesplit
+    {{ printf "servers=%s" (join "," $serverList) }}
+    user=root
+    password={{ .Values.rootUser.password }}
+    master_failure_mode=fail_on_write
+    enable_root_user=1
+
+    [Galera-Listener]
+    type=listener
+    service=Galera-Service
+    protocol=mariadbprotocol
+    port=4006
+{{- end }}

@@ -1,0 +1,4 @@
+apiVersion: v2
+name: redis-sentinel-v2
+version: 6.2.7-1
+appVersion: 6.2.7

@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.redis.app }}
+spec:
+  serviceName: redis
+  replicas: {{ .Values.redis.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.redis.app }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.redis.app }}
+    spec:
+      initContainers:
+      - name: config
+        image: {{ .Values.images.redis }}
+        command: [ "sh", "-c" ]
+        args:
+          - |
+            echo "Copying configuration file"
+            cp /tmp/redis/redis.conf /etc/redis/redis.conf
+            if [ "$(redis-cli -h sentinel -p 26379 ping)" != "PONG" ]; then
+              echo "Sentinel not found to get the master info, defaulting to redis-0"
+              if [ "$(hostname)" == "redis-0" ]; then
+                echo "This is redis-0, No need to update config."
+              else
+                echo "This is not redis-0, Updating redis.conf. finding master FQDN"
+                MASTER_FDQN=`hostname  -f | sed -e 's/redis-[0-9]\./redis-0./'`
+                echo "REPLICAOF $MASTER_FDQN 6379" >> /etc/redis/redis.conf
+              fi
+            else
+              echo "Sentinel found, finding master"
+              MASTER="$(redis-cli -h sentinel -p 26379 sentinel get-master-addr-by-name {{ .Values.sentinel.masterGroupName }} | grep -E '(^redis-\d{1,})|([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})')"
+              echo "Master got: $MASTER, updating this in redis.conf"
+              echo "REPLICAOF $MASTER 6379" >> /etc/redis/redis.conf
+            fi
+        volumeMounts:
+        - name: redis-config
+          mountPath: /etc/redis/
+        - name: config
+          mountPath: /tmp/redis/
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: {{ .Values.nodeAffinityPreset.key }}
+                  operator: In
+                  values:
+                    {{- range .Values.nodeAffinityPreset.values }}
+                    - {{ . | quote }}
+                    {{- end }}
+      containers:
+      - name: redis
+        image: {{ .Values.images.redis }}
+        command: ["redis-server"]
+        args: ["/etc/redis/redis.conf"]
+        ports:
+        - containerPort: 6379
+          name: redis
+        volumeMounts:
+        - name: persistent-data
+          mountPath: /data
+        - name: redis-config
+          mountPath: /etc/redis/
+      volumes:
+      - name: persistent-data
+        persistentVolumeClaim:
+          claimName: redis-pvc
+      - name: redis-config
+        emptyDir: {}
+      - name: config
+        configMap:
+          name: redis-config
+      #imagePullSecrets:
+      #- name: regcred

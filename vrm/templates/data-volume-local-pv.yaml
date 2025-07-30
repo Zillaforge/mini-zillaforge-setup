@@ -1,0 +1,23 @@
+{{- range $vol := .Values.volumes }}
+{{- if eq $vol.type "local" }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ $.Values.app }}-{{ $vol.name }}-pv
+spec:
+  storageClassName: {{ $.Values.app }}-{{ $vol.name }}-volume
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  local:
+    path: {{ $vol.path }}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: Exists
+{{- end }}
+{{- end }}

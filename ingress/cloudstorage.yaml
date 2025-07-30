@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: storage-ingress
+  namespace: default
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: storage.hostip.nip.io
+    http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service: 
+              name: data-storage-service-public-service
+              port:
+                number: 8080
+  - host: '*.storage.hostip.nip.io'
+    http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service: 
+              name: data-storage-service-public-service
+              port:
+                number: 8080  

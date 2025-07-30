@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.app }}-service
+  labels:
+    app: {{ .Values.app }}
+spec:
+  {{- if eq .Values.service.enableNodePort true }}
+  type: NodePort
+  {{- end }}
+  {{- if .Values.service.externalIPs }}
+  externalIPs: {{ .Values.service.externalIPs }}
+  {{- end }}
+  selector:
+    app: {{ .Values.app }}
+  ports:
+  - name: proxy-http
+    protocol: TCP
+    port: {{ .Values.ports.proxyHttp.port }}
+    targetPort: {{ .Values.ports.proxyHttp.port }}
+    {{- if eq .Values.service.enableNodePort true }}
+    nodePort: {{ .Values.ports.proxyHttp.nodePort }}
+    {{- end }}
+  {{- if eq .Values.enableTLS true }}
+  - name: proxy-https
+    protocol: TCP
+    port: {{ .Values.ports.proxyHttps.port }}
+    targetPort: {{ .Values.ports.proxyHttps.port }}
+    {{- if eq .Values.service.enableNodePort true }}
+    nodePort: {{ .Values.ports.proxyHttps.nodePort }}
+    {{- end }}
+  {{- end }}
+  - name: admin-http
+    protocol: TCP
+    port: {{ .Values.ports.adminHttp.port }}
+    targetPort: {{ .Values.ports.adminHttp.port }}
+    {{- if eq .Values.service.enableNodePort true }}
+    nodePort: {{ .Values.ports.adminHttp.nodePort }}
+    {{- end }}
+  {{- if eq .Values.enableTLS true }}
+  - name: admin-https
+    protocol: TCP
+    port: {{ .Values.ports.adminHttps.port }}
+    targetPort: {{ .Values.ports.adminHttps.port }}
+    {{- if eq .Values.service.enableNodePort true }}
+    nodePort: {{ .Values.ports.adminHttps.nodePort }}
+    {{- end }}
+  {{- end }}

@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.app }}-config
+data:
+  KONG_DATABASE: postgres
+  KONG_PG_HOST: {{ .Values.postgresql.host }}
+  KONG_PG_PORT: {{ .Values.postgresql.port | quote }}
+  KONG_PG_DATABASE: {{ .Values.postgresql.database }}
+  KONG_LOG_LEVEL: debug
+  KONG_PROXY_ACCESS_LOG: /var/log/kong/proxy_access.log
+  KONG_PROXY_ERROR_LOG: /var/log/kong/proxy_error.log
+  KONG_ADMIN_ACCESS_LOG: /var/log/kong/admin_access.log
+  KONG_ADMIN_ERROR_LOG: /var/log/kong/admin_error.log
+  KONG_PLUGINS: bundled
+  {{- if .Values.images.kongAuthPlugin -}}
+  ,kong-auth-plugin
+  {{- end -}}
+  {{- if .Values.images.kongLogPlugin -}}
+  ,kong-log-plugin
+  {{- end -}}
+  {{- if .Values.images.kongHamPlugin -}}
+  ,kong-ham-plugin
+  {{- end -}}
+  {{- if .Values.images.kongIngressPlugin -}}
+  ,kong-ingress-plugin
+  {{- end }}
+  {{- if .Values.images.grafanaAuthProxy -}}
+  ,grafana-auth-proxy
+  {{- end -}}
+  {{- if .Values.images.vmsAuthProxy -}}
+  ,vms-auth-proxy
+  {{- end }}
+  {{- if .Values.images.kongMonitorAuthPlugin -}}
+  ,kong-monitor-auth-plugin
+  {{- end }}
+  {{- if .Values.images.kongResponseTransformerPlugin -}}
+  ,kong-response-transformer-plugin
+  {{- end }}
+  KONG_LUA_PACKAGE_PATH: "/home/lua_plugins/?.lua;;"
+  KONG_PLUGINSERVER_NAMES: bundled
+  {{- if .Values.images.kongAuthPlugin -}}
+  ,kong-auth-plugin
+  {{- end -}}
+  {{- if .Values.images.kongLogPlugin -}}
+  ,kong-log-plugin
+  {{- end -}}
+  {{- if .Values.images.kongHamPlugin -}}
+  ,kong-ham-plugin
+  {{- end }}
+  {{- if .Values.images.kongIngressPlugin -}}
+  ,kong-ingress-plugin
+  {{- end }}
+  {{- if .Values.images.kongMonitorAuthPlugin -}}
+  ,kong-monitor-auth-plugin
+  {{- end }}
+  {{- if .Values.images.kongAuthPlugin }}
+  KONG_PLUGINSERVER_KONG_AUTH_PLUGIN_SOCKET: /usr/local/kong/kong-auth-plugin.socket
+  KONG_PLUGINSERVER_KONG_AUTH_PLUGIN_START_CMD: /home/kong-auth-plugin
+  KONG_PLUGINSERVER_KONG_AUTH_PLUGIN_QUERY_CMD: /home/kong-auth-plugin -dump
+  {{- end }}
+  {{- if .Values.images.kongLogPlugin }}
+  KONG_PLUGINSERVER_KONG_LOG_PLUGIN_SOCKET: /usr/local/kong/kong-log-plugin.socket
+  KONG_PLUGINSERVER_KONG_LOG_PLUGIN_START_CMD: /home/kong-log-plugin
+  KONG_PLUGINSERVER_KONG_LOG_PLUGIN_QUERY_CMD: /home/kong-log-plugin -dump
+  {{- end }}
+  {{- if .Values.images.kongHamPlugin }}
+  KONG_PLUGINSERVER_KONG_HAM_PLUGIN_SOCKET: /usr/local/kong/kong-ham-plugin.socket
+  KONG_PLUGINSERVER_KONG_HAM_PLUGIN_START_CMD: /home/kong-ham-plugin
+  KONG_PLUGINSERVER_KONG_HAM_PLUGIN_QUERY_CMD: /home/kong-ham-plugin -dump
+  {{- end }}
+  {{- if .Values.images.kongIngressPlugin }}
+  KONG_PLUGINSERVER_KONG_INGRESS_PLUGIN_SOCKET: /usr/local/kong/kong-ingress-plugin.socket
+  KONG_PLUGINSERVER_KONG_INGRESS_PLUGIN_START_CMD: /home/kong-ingress-plugin
+  KONG_PLUGINSERVER_KONG_INGRESS_PLUGIN_QUERY_CMD: /home/kong-ingress-plugin -dump
+  {{- end }}
+  {{- if .Values.images.kongMonitorAuthPlugin }}
+  KONG_PLUGINSERVER_KONG_MONITOR_AUTH_PLUGIN_SOCKET: /usr/local/kong/kong-monitor-auth-plugin.socket
+  KONG_PLUGINSERVER_KONG_MONITOR_AUTH_PLUGIN_START_CMD: /home/kong-monitor-auth-plugin
+  KONG_PLUGINSERVER_KONG_MONITOR_AUTH_PLUGIN_QUERY_CMD: /home/kong-monitor-auth-plugin -dump
+  {{- end }}
+  KONG_ADMIN_LISTEN: 0.0.0.0:8001,0.0.0.0:8444 ssl
+  KONG_ADMIN_SSL_CERT: /etc/kong/tls/tls.crt
+  KONG_ADMIN_SSL_CERT_KEY: /etc/kong/tls/tls.key
+  KONG_PROXY_LISTEN: 0.0.0.0:8000,0.0.0.0:8443 ssl
+  KONG_SSL_CERT: /etc/kong/tls/tls.crt
+  KONG_SSL_CERT_KEY: /etc/kong/tls/tls.key
+ 

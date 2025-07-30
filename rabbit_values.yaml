@@ -1,0 +1,15 @@
+auth:
+  username: user
+  password: password
+
+replicaCount: 1
+
+resources:
+  requests:
+    memory: 512Mi
+    cpu: 250m
+  limits:
+    memory: 1Gi
+    cpu: 500m
+
+###helm install rabbitmq oci://registry-1.docker.io/bitnamicharts/rabbitmq -f rabbit_values.yaml 

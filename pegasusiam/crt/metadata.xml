@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" validUntil="2021-11-25T07:22:01Z" cacheDuration="PT1627024921S" entityID="https://iservice.nchc.org.tw">
+  <md:IDPSSODescriptor WantAuthnRequestsSigned="false" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+    <md:KeyDescriptor use="signing">
+      <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+        <ds:X509Data>
+          <ds:X509Certificate>MIIDuzCCAqKgAwIBAgIBADANBgkqhkiG9w0BAQ0FADB2MQswCQYDVQQGEwJ0dzEPMA0GA1UECAwGVGFpd2FuMTcwNQYDVQQKDC5OYXRpb25hbCBDZW50ZXIgZm9yIEhpZ2gtcGVyZm9ybWFuY2UgQ29tcHV0aW5nMR0wGwYDVQQDDBRpc2VydmljZS5uY2hjLm9yZy50dzAgFw0xOTExMTMwNzI3MzBaGA8yMTE5MTAyMDA3MjczMFowdjELMAkGA1UEBhMCdHcxDzANBgNVBAgMBlRhaXdhbjE3MDUGA1UECgwuTmF0aW9uYWwgQ2VudGVyIGZvciBIaWdoLXBlcmZvcm1hbmNlIENvbXB1dGluZzEdMBsGA1UEAwwUaXNlcnZpY2UubmNoYy5vcmcudHcwggEjMA0GCSqGSIb3DQEBAQUAA4IBEAAwggELAoIBAgC0Kb22R0nhehdiDj0nPt+iP+FazB3GsuIvkOSOec0JhLmam85HdJn7EvK3P6iQ26WfTbr1d3bt/1m4n4LsFsMke5EPy+aQZuf4zr1n6Ru55UOOht7RRBOn3aVA/BrvEIxjBfk552wrmTWjKUhz/KSWdR6vGQgwZg792LeKkrlKcsKiZGkp6eL68hbaj7KKfEpDN9IEuK2malDD5G3ok8/FCDY6ujaqsbh5iISwYrayGo0CsgQ6h+TJN1oCeCehatKTjVxp3k8ux+AjarpBJPOsQWCd+VVbvbyVNB24x9NE++e47sAb/8qJ92wJTfqjb6pe7/mJCnx7LXLOrvfoS+v61wIDAQABo1AwTjAdBgNVHQ4EFgQUb3brDySfqgnJq6kJ/sanLmesxucwHwYDVR0jBBgwFoAUb3brDySfqgnJq6kJ/sanLmesxucwDAYDVR0TBAUwAwEB/zANBgkqhkiG9w0BAQ0FAAOCAQIAFt4JJXD0RHgdFszCnZmfRBsnyNAmoz4AIrKtvZhT/iChxgLtFDwew3Qtb3Zv1WBcxrzI/LveqNBOglA9NOrdlq0+6HTIXorxYEtADC7sHWneJfsvtHtTPvVLm10pL60X5dxnP1+cB/qL4dUzWqYkGd1pmUpMV3Z4Z47fND6hx8mQVV/zHizbuxLjtgyJVCFGZ6Z1+7qeRLfZUgJ/po7CQZkBzgB5HIrRO5fHGE7/+WTwgXO6Yhg4ZT9lTYWHGzz9HyreIB9y8bmFTUNQPSUkR9zTF5GS4yLSIa1F5+ngswSc3Imoz7ZFutF/AGWaoPLgZ07gK9njmN5kHJoo8qcgxJk=</ds:X509Certificate>
+        </ds:X509Data>
+      </ds:KeyInfo>
+    </md:KeyDescriptor>
+    <md:KeyDescriptor use="encryption">
+      <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+        <ds:X509Data>
+          <ds:X509Certificate>MIIDuzCCAqKgAwIBAgIBADANBgkqhkiG9w0BAQ0FADB2MQswCQYDVQQGEwJ0dzEPMA0GA1UECAwGVGFpd2FuMTcwNQYDVQQKDC5OYXRpb25hbCBDZW50ZXIgZm9yIEhpZ2gtcGVyZm9ybWFuY2UgQ29tcHV0aW5nMR0wGwYDVQQDDBRpc2VydmljZS5uY2hjLm9yZy50dzAgFw0xOTExMTMwNzI3MzBaGA8yMTE5MTAyMDA3MjczMFowdjELMAkGA1UEBhMCdHcxDzANBgNVBAgMBlRhaXdhbjE3MDUGA1UECgwuTmF0aW9uYWwgQ2VudGVyIGZvciBIaWdoLXBlcmZvcm1hbmNlIENvbXB1dGluZzEdMBsGA1UEAwwUaXNlcnZpY2UubmNoYy5vcmcudHcwggEjMA0GCSqGSIb3DQEBAQUAA4IBEAAwggELAoIBAgC0Kb22R0nhehdiDj0nPt+iP+FazB3GsuIvkOSOec0JhLmam85HdJn7EvK3P6iQ26WfTbr1d3bt/1m4n4LsFsMke5EPy+aQZuf4zr1n6Ru55UOOht7RRBOn3aVA/BrvEIxjBfk552wrmTWjKUhz/KSWdR6vGQgwZg792LeKkrlKcsKiZGkp6eL68hbaj7KKfEpDN9IEuK2malDD5G3ok8/FCDY6ujaqsbh5iISwYrayGo0CsgQ6h+TJN1oCeCehatKTjVxp3k8ux+AjarpBJPOsQWCd+VVbvbyVNB24x9NE++e47sAb/8qJ92wJTfqjb6pe7/mJCnx7LXLOrvfoS+v61wIDAQABo1AwTjAdBgNVHQ4EFgQUb3brDySfqgnJq6kJ/sanLmesxucwHwYDVR0jBBgwFoAUb3brDySfqgnJq6kJ/sanLmesxucwDAYDVR0TBAUwAwEB/zANBgkqhkiG9w0BAQ0FAAOCAQIAFt4JJXD0RHgdFszCnZmfRBsnyNAmoz4AIrKtvZhT/iChxgLtFDwew3Qtb3Zv1WBcxrzI/LveqNBOglA9NOrdlq0+6HTIXorxYEtADC7sHWneJfsvtHtTPvVLm10pL60X5dxnP1+cB/qL4dUzWqYkGd1pmUpMV3Z4Z47fND6hx8mQVV/zHizbuxLjtgyJVCFGZ6Z1+7qeRLfZUgJ/po7CQZkBzgB5HIrRO5fHGE7/+WTwgXO6Yhg4ZT9lTYWHGzz9HyreIB9y8bmFTUNQPSUkR9zTF5GS4yLSIa1F5+ngswSc3Imoz7ZFutF/AGWaoPLgZ07gK9njmN5kHJoo8qcgxJk=</ds:X509Certificate>
+        </ds:X509Data>
+      </ds:KeyInfo>
+    </md:KeyDescriptor>
+    <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://iservice.nchc.org.tw/nchc_service/new_saml_slo.php"/>
+    <md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified</md:NameIDFormat>
+    <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://iservice.nchc.org.tw/nchc_service/new_saml_sso.php"/>
+  </md:IDPSSODescriptor>
+</md:EntityDescriptor>

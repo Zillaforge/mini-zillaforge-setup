@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.sentinel.app }}
+spec:
+  serviceName: sentinel
+  replicas: {{ .Values.sentinel.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.sentinel.app }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.sentinel.app }}
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: {{ .Values.nodeAffinityPreset.key }}
+                  operator: In
+                  values:
+                    {{- range .Values.nodeAffinityPreset.values }}
+                    - {{ . | quote }}
+                    {{- end }}
+      initContainers:
+      - name: config
+        image: {{ .Values.images.redis }}
+        command: [ "bash", "-c" ] #本來是sh改成bash，因為第5行語法有錯。
+        args:
+          - |
+            REDIS_PASSWORD={{ .Values.redis.password }}
+            nodes={{ .Values.sentinel.redisNodes }}
+            MASTER={{ .Values.sentinel.staticMaster }}
+            echo "Looping thorugh the redis list to see if Redis Master node is available now"
+            for i in ${nodes//,/ }
+            do
+                if [ "$MASTER" != "" ]; then
+                    break
+                else
+                    for j in 1 2 3 4 5
+                    do
+                        MASTER=$(redis-cli --no-auth-warning --raw -h $i -a $REDIS_PASSWORD info replication | awk '{print $1}' | grep master_host: | cut -d ":" -f2)
+                        echo "trying to call $i to retrieve master, but received an empty string as response. retry after a few seconds..."
+                        if [ "$MASTER" == "" ]; then
+                            if [ "$j" == 5 ]; then
+                                echo "no master info found in $i"
+                                MASTER=
+                                break
+                            else
+                                sleep 30;
+                            fi
+                        else
+                            echo "found $MASTER. setting the configurations"
+                            break
+                        fi
+                    done
+                fi
+            done
+            echo "Creating Sentinel configuration file"
+            echo "port 26379
+            sentinel monitor {{ .Values.sentinel.masterGroupName }} $MASTER 6379 2
+            sentinel resolve-hostnames yes
+            sentinel announce-hostnames yes
+            sentinel down-after-milliseconds {{ .Values.sentinel.masterGroupName }} 5000
+            sentinel failover-timeout {{ .Values.sentinel.masterGroupName }} 60000
+            sentinel parallel-syncs {{ .Values.sentinel.masterGroupName }} 1
+            sentinel auth-pass {{ .Values.sentinel.masterGroupName }} $REDIS_PASSWORD
+            sentinel sentinel-user default
+            sentinel sentinel-pass {{ .Values.sentinel.password }}
+            " > /etc/redis/sentinel.conf
+            cat /etc/redis/sentinel.conf
+        volumeMounts:
+        - name: redis-config
+          mountPath: /etc/redis/
+      containers:
+      - name: sentinel
+        image: {{ .Values.images.redis }}
+        command: ["redis-sentinel"]
+        args: ["/etc/redis/sentinel.conf"]
+        ports:
+        - containerPort: 26379
+          name: sentinel
+        volumeMounts:   
+        - name: redis-config
+          mountPath: /etc/redis/
+      volumes:
+      - name: redis-config
+        emptyDir: {}
+      #imagePullSecrets:
+      #- name: regcred

@@ -1,0 +1,284 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app }}
+  labels:
+    app: {{ .Values.app }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.app }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app }}
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+    spec:
+      initContainers:
+      {{- if .Values.images.kongAuthPlugin }}
+      - name: copy-kong-auth-plugin
+        image: {{ .Values.images.kongAuthPlugin }}
+        imagePullPolicy: IfNotPresent
+        command: ['/bin/sh', '-c', "cp /home/plugins/* /home/share_volume"]
+        volumeMounts:
+        - name: plugin-volume
+          mountPath: /home/share_volume/
+      {{- end }}
+      {{- if .Values.images.kongResponseTransformerPlugin }}
+      - name: kong-response-transformer-plugin
+        image: {{ .Values.images.kongResponseTransformerPlugin }}
+        imagePullPolicy: IfNotPresent
+        command: ['/bin/sh', '-c', 'cp -R /opt/lua_plugins/ /home/share_volume/']
+        volumeMounts:
+        - name: plugin-volume
+          mountPath: /home/share_volume/
+      {{- end }}
+      containers:
+      {{- if .Values.images.kongDebugger }}
+      - name: kong-debugger
+        image: {{ .Values.images.kongDebugger}}
+        volumeMounts:
+        - name: log-volume
+          mountPath: /var/log/kong/
+      {{- end}}
+      - name: system-kong
+        image: {{ .Values.images.kong }}
+        volumeMounts:
+        - name: plugin-volume
+          mountPath: /home/
+        - name: log-volume
+          mountPath: /var/log/kong/
+        - name: tls-secret
+          mountPath: /etc/kong/tls
+          readOnly: true
+        - name: kong-config #aaa
+          mountPath: /etc/kong/kong.yaml
+          subPath: public-system-kong-service.yml
+        env:
+        - name: KONG_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_DATABASE
+        - name: KONG_PG_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PG_HOST
+        - name: KONG_PG_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PG_PORT
+        - name: KONG_PG_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PG_DATABASE
+        - name: KONG_PG_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.app }}-secret
+              key: KONG_PG_USER
+        - name: KONG_PG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.app }}-secret
+              key: KONG_PG_PASSWORD
+        - name: KONG_LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_LOG_LEVEL
+        - name: KONG_PROXY_ACCESS_LOG
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PROXY_ACCESS_LOG
+        - name: KONG_PROXY_ERROR_LOG
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PROXY_ERROR_LOG
+        - name: KONG_ADMIN_ACCESS_LOG
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_ADMIN_ACCESS_LOG
+        - name: KONG_ADMIN_ERROR_LOG
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_ADMIN_ERROR_LOG
+        - name: KONG_PLUGINS
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PLUGINS
+        - name: KONG_LUA_PACKAGE_PATH
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_LUA_PACKAGE_PATH
+        - name: KONG_PLUGINSERVER_NAMES
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PLUGINSERVER_NAMES
+        {{- if .Values.images.kongAuthPlugin }}
+        - name: KONG_PLUGINSERVER_KONG_AUTH_PLUGIN_SOCKET
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PLUGINSERVER_KONG_AUTH_PLUGIN_SOCKET
+        - name: KONG_PLUGINSERVER_KONG_AUTH_PLUGIN_START_CMD
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PLUGINSERVER_KONG_AUTH_PLUGIN_START_CMD
+        - name: KONG_PLUGINSERVER_KONG_AUTH_PLUGIN_QUERY_CMD
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PLUGINSERVER_KONG_AUTH_PLUGIN_QUERY_CMD
+        {{- end }}
+        {{- if .Values.images.kongLogPlugin }}
+        - name: KONG_PLUGINSERVER_KONG_LOG_PLUGIN_SOCKET
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PLUGINSERVER_KONG_LOG_PLUGIN_SOCKET
+        - name: KONG_PLUGINSERVER_KONG_LOG_PLUGIN_START_CMD
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PLUGINSERVER_KONG_LOG_PLUGIN_START_CMD
+        - name: KONG_PLUGINSERVER_KONG_LOG_PLUGIN_QUERY_CMD
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PLUGINSERVER_KONG_LOG_PLUGIN_QUERY_CMD
+        {{- end }}
+        {{- if .Values.images.kongHamPlugin }}
+        - name: KONG_PLUGINSERVER_KONG_HAM_PLUGIN_SOCKET
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PLUGINSERVER_KONG_HAM_PLUGIN_SOCKET
+        - name: KONG_PLUGINSERVER_KONG_HAM_PLUGIN_START_CMD
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PLUGINSERVER_KONG_HAM_PLUGIN_START_CMD
+        - name: KONG_PLUGINSERVER_KONG_HAM_PLUGIN_QUERY_CMD
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PLUGINSERVER_KONG_HAM_PLUGIN_QUERY_CMD
+        {{- end }}
+        {{- if .Values.images.kongIngressPlugin }}
+        - name: KONG_PLUGINSERVER_KONG_INGRESS_PLUGIN_SOCKET
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PLUGINSERVER_KONG_INGRESS_PLUGIN_SOCKET
+        - name: KONG_PLUGINSERVER_KONG_INGRESS_PLUGIN_START_CMD
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PLUGINSERVER_KONG_INGRESS_PLUGIN_START_CMD
+        - name: KONG_PLUGINSERVER_KONG_INGRESS_PLUGIN_QUERY_CMD
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PLUGINSERVER_KONG_INGRESS_PLUGIN_QUERY_CMD
+        {{- end }}
+        {{- if .Values.images.kongMonitorAuthPlugin }}
+        - name: KONG_PLUGINSERVER_KONG_MONITOR_AUTH_PLUGIN_SOCKET
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PLUGINSERVER_KONG_MONITOR_AUTH_PLUGIN_SOCKET
+        - name: KONG_PLUGINSERVER_KONG_MONITOR_AUTH_PLUGIN_START_CMD
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PLUGINSERVER_KONG_MONITOR_AUTH_PLUGIN_START_CMD
+        - name: KONG_PLUGINSERVER_KONG_MONITOR_AUTH_PLUGIN_QUERY_CMD
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PLUGINSERVER_KONG_MONITOR_AUTH_PLUGIN_QUERY_CMD
+        {{- end }}
+        - name: KONG_ADMIN_LISTEN
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_ADMIN_LISTEN
+        - name: KONG_ADMIN_SSL_CERT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_ADMIN_SSL_CERT
+        - name: KONG_ADMIN_SSL_CERT_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_ADMIN_SSL_CERT_KEY
+        - name: KONG_PROXY_LISTEN
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PROXY_LISTEN
+        - name: KONG_SSL_CERT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_SSL_CERT
+        - name: KONG_SSL_CERT_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_SSL_CERT_KEY
+        ports:
+        - containerPort: {{ .Values.ports.proxyHttp.port }}
+        - containerPort: {{ .Values.ports.proxyHttps.port }}
+        - containerPort: {{ .Values.ports.adminHttp.port }}
+        - containerPort: {{ .Values.ports.adminHttps.port }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.ports.proxyHttp.port }}
+          initialDelaySeconds: 10
+          periodSeconds: 15
+      {{- if .Values.images.filebeat }}
+      - name: system-kong-filebeat
+        image: {{ .Values.images.filebeat }}
+        command: ['filebeat', '-e', '-strict.perms=false', '--path.config', "/etc/filebeat"]
+        volumeMounts:
+        - name: log-volume
+          mountPath: /var/log/kong/
+        - name: filebeat-config
+          mountPath: /etc/filebeat/filebeat.yml
+          subPath: filebeat.yml
+      {{- end }}
+      volumes:
+      - name: plugin-volume
+        emptyDir: {}
+      - name: log-volume
+        emptyDir: {}
+      - name: tls-secret
+        secret:
+          secretName: {{ .Values.app }}-tls
+      - name: filebeat-config
+        configMap:
+          name: {{ .Values.app }}-filebeat-config
+      - name: kong-config #aaa
+        configMap:
+          name: {{ .Values.app }}-init-config
+      {{- if .Values.deployment.spec }}
+      {{- toYaml .Values.deployment.spec | nindent 6 }}
+      {{- end }}
+      # imagePullSecrets:
+      # - name: regcred

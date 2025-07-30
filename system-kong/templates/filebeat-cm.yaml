@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.app }}-filebeat-config
+data:
+  filebeat.yml: |
+    filebeat.inputs:
+    - type: log
+      enabled: true
+      paths:
+        - /var/log/kong/filelog.log
+      json.keys_under_root: true
+      json.add_error_key: true
+    processors:
+      - decode_json_fields:
+          fields: []
+    setup.ilm.enabled: false
+    setup.template.name: "apilogs"
+    setup.template.pattern: "apilogs-*"
+    setup.template.settings:
+      index.number_of_shards: 1
+    output.elasticsearch:
+      {{- toYaml .Values.elasticSearch | nindent 6 }}

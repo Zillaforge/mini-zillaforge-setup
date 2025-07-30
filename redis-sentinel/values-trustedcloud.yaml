@@ -1,0 +1,25 @@
+images:
+  redis: bitnami/redis
+
+redis:
+  app: redis
+  password: password
+  persistentPath: /trusted-cloud/local/redis   #需要在本機建立路徑，並且開權限775
+  nodePort: 30377
+  replicas: 1
+
+
+  
+sentinel:
+  app: redis-sentinel
+  masterGroupName: mymaster
+  replicas: 1
+  redisNodes: "redis"
+
+nodeAffinityPreset:
+   key: "kubernetes.io/hostname"
+   values: 
+   - node1
+   - node2
+   - node3
+   - instance-hx9bq8 #自己的虛擬機node values

@@ -1,0 +1,20 @@
+{{- if .Values.phpmyadmin.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Chart.Name }}-phpmyadmin
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+  {{- if .Values.commonLabels }}
+  {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+  {{- end }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ printf "%s-phpmyadmin" (include "common.names.releaseName" .) }}
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+    nodePort: {{ .Values.phpmyadmin.nodePort }}
+{{- end }}

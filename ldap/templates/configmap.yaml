@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.app }}-config
+data:
+  ldap-service.yaml: |
+{{- toYaml .Values.configmap | nindent 4 }}
+

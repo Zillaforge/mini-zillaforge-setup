@@ -1,0 +1,39 @@
+app: public-system-kong
+
+images:
+    kongAuthPlugin: Zillaforge/kong-auth-plugin:2.0.3
+
+service:
+    enableNodePort: true #false
+    externalIPs: []
+ports:
+    proxyHttp:
+        port: 8000
+        nodePort: 31382
+    proxyHttps:
+        port: 8443
+        nodePort: 31383
+    adminHttp:
+        port: 8001
+        nodePort: 31384
+    adminHttps:
+        port: 8444
+        nodePort: 31385
+
+enableTLS: false
+
+postgresql:
+    host: test-postgresql-postgresql-ha-pgpool
+    port: 5432
+    user: postgresqlusername
+    password: password
+    database: postgres #我只有這個資料庫...
+
+elasticSearch:
+    hosts: ["elastic-stack-svc.log-service.svc:9200"]
+    index: apilogs-%{+xxxx.ww}
+kongData:
+    filename: public-system-kong-service.yml
+deployment:
+  spec:
+

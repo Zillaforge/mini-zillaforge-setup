@@ -1,0 +1,275 @@
+images:
+  iam: Zillaforge/iam:1.8.3 #讀本地docker
+  eventpublishPlugin: Zillaforge/event-publish-plugin:0.1.2 #讀本地docker
+  debugger: Zillaforge/debugger:1.0.2 #讀本地docker
+  #NCHCiServiceAuthPlugin: 用不到~
+  # filebeat: elastic/filebeat:8.14.3 #官方
+
+
+configmap:
+  version: 1.8.3
+  kind: PegasusIAM
+  iam:
+    instance: PegasusIAM-trustcloud
+    host: 0.0.0.0:5051
+    http_host: 0.0.0.0:8084
+    unix_socket: /run/PegasusIAM.sock
+    http_attributes:
+      access_control_allow:
+        origin: "*"
+    unix_socket_attributes:
+      conn_count: 20
+    system_project: 14735dfa-5553-46cc-b4bd-405e711b223f  ####
+    jwt_token:
+      salt: eQ29N97QQsxHo//Tvn2moCi1mkLlHtf89l7+lX4TIS4Z61Ndp3JCKyxLTzlSDcRDDs+0YDgGoAjRgihL2bK2GQ== #################
+      expire_mins: 1440
+      refresh_mins: 1440
+    logger: 
+      system_log:
+        path: /var/log/ASUS
+        mode: debug
+        max_size: 50
+        max_backups: 5
+        max_age: 10
+        compress: false
+        show_in_console: true
+      access_log:
+        path: /var/log/ASUS
+        show_in_console: true
+    tls: #沒用到
+      enable: false
+      cert_path: tls/pegasus-iam/pegasus-iam.pem
+      key_path: tls/pegasus-iam/pegasus-iam-key.pem
+    scopes: 
+      mfa_required: false
+      enable_standard_redirect_code: false
+      enable_namespaced: false
+      enable_password_expired: false
+      enable_security_guard: false
+      permission_validate_mode: blacklist
+      enable_password_history: false
+      enable_change_initial_password: false
+      availability_district: "tw-tc-ad1" 
+    redirection:
+      user_portal_mfa_verify_page: https://www.trusted-cloud.nchc.org.tw  
+      user_portal_mfa_register_page: https://www.trusted-cloud.nchc.org.tw 
+    mfa: 
+      issuer: CloudInfra
+      account_name: pegasus-cloud
+      period: 30
+      algorithm: SHA1
+      secret_size: 20
+      register_token_salt: eQ29N97QQsxHo//Tvn2moCi1mkLlHtf89l7+lX4TIS4Z61Ndp3JCKyxLTzlSDcRDDs+0YDgGoAjRgihL2bK2GQ==
+    force_change_password:
+      maximum_age: 180
+      token_salt: eQ29N97QQsxHo//Tvn2moCi1mkLlHtf89l7+lX4TIS4Z61Ndp3JCKyxLTzlSDcRDDs+0YDgGoAjRgihL2bK2GQ==
+    password_history:
+      detect_range: 1
+    security_guard:
+      violations: 3
+      jail_period: 900
+      observation_time: 900
+    tracer: #用不到
+      enable: false
+      collector_endpoint: http://jaeger-service:14268/api/traces 
+      timeout: 10
+    extra_key_whitelist:
+      enable: true
+      user_rules:
+      - key: enableSimulationUser
+        mode: rw
+        type: bool
+        default: false
+      - key: iservice.hostAccount
+        mode: ro
+        type: string
+        default: ''
+      - key: tw-tc-ad1.opsk.uuid
+        mode: '-'
+        type: string
+        default: ''
+      project_rules:
+      - key: iservice.projectSysCode
+        mode: ro
+        type: string
+        default: ''
+      - key: tw-tc-ad1.opsk.uuid
+        mode: '-'
+        type: string
+        default: ''
+      - key: resourceReview.vpsVM
+        mode: ro
+        type: bool
+        default: false
+      - key: resourceReview.kaas
+        mode: ro
+        type: bool
+        default: false
+      - key: resourceReview.vps
+        mode: ro
+        type: bool
+        default: false
+      - key: resourceReview.floatingIp
+        mode: ro
+        type: bool
+        default: false
+      - key: resourceReview.gpuFlavor
+        mode: ro
+        type: bool
+        default: false
+      membership_rules:
+      - key: opUserMode
+        mode: '-'
+        type: int
+        default: 1
+  metadata: # my_redis_sentinel 這是給下面的redis_sentinel用的
+    enable: true
+    service: my_redis_sentinel
+  littlebell: #6/3當前用不到，預計可以拿掉
+      host: http://simple-notification-service-service:8092
+      region: default
+      credential:
+        project_id: 14735dfa-5553-46cc-b4bd-405e711b223f
+        user_id: 4990ccdb-a9b1-49e5-91df-67c921601d81
+      arn: []
+  plugin: 
+    auth_chain:
+      enable: false #沒用到
+      path: "/var/lib/ASUS/pegasusiam/authchain"
+      plugin:
+      - name: NCHCiServiceAuthChainPlugin
+        version: 0.0.3
+        redirect:
+          endpoint: https://www.trusted-cloud.nchc.org.tw
+          token:
+            salt: eQ29N97QQsxHo//Tvn2moCi1mkLlHtf89l7+lX4TIS4Z61Ndp3JCKyxLTzlSDcRDDs+0YDgGoAjRgihL2bK2GQ==
+            expires_in_minutes: 10
+        saml:
+          iam_host: https://api.trusted-cloud.nchc.org.tw
+          client_id: https://www.trusted-cloud.nchc.org.tw
+          certificate: "/etc/ASUS/ssl/certs/nchc-iservice.crt"
+          private_key: "/etc/ASUS/ssl/certs/nchc-iservice.key"
+          identity_provider:
+            metadata_path: "/etc/ASUS/ssl/certs/metadata.xml"
+        iservice:
+          scheme: https
+          host: iservice-api.nchc.org.tw
+          account: []
+          password: []
+          enable_insecure_skip_verify: true
+  ldap:
+    host: 0.0.0.0:3891
+    provider: iam
+    # Only supported: "Add", "Bind", "Connect", "Delete", "Disconnect",
+    #   "ExtendedRequest", "Modify", "ModifyDN", "PasswordModify", "Search", "Whoami" and "*"(Allow All)
+    allow_operation: ['*']
+    tls: #關掉了
+      enable: false
+      cert_path: tls/pegasus-iam/pegasus-iam.pem
+      key_path: tls/pegasus-iam/pegasus-iam-key.pem
+    cli_secret_namespace:
+      # - srt.asus.com
+  storage:
+    provider: mariadb
+    mariadb:
+      host: mariadb-galera:3306
+      account: root
+      password: password
+      name: iam
+      timeout: 5
+      max_open_conns: 150
+      conn_max_lifetime: 10
+      max_idle_conns: 150
+  services:
+  - name: my_redis_sentinel
+    kind: redis_sentinel
+    hosts:
+    - redis-sentinel-service:26379
+    password: password
+    master_group_name: mymaster
+  event_publish:
+    plugins: 
+    - name: EventPublishPlugin
+      type: grpc
+      binary_path: "/var/lib/ASUS/pegasusiam/eventpublish/eventpublishplugin"
+      config_path: "/var/lib/ASUS/pegasusiam/eventpublish/config/eventpublishplugin.yaml"
+      socket_path: /run/eventpublishplugin.sock
+      start_cmd_args:
+        --redis-channel: FromIAM
+
+scheduler:
+  enabled: true
+  configmap:
+    version: 1.8.3
+    kind: PegasusIAMScheduler
+    iamScheduler:
+      instance: PegasusIAMScheduler-TrustCloud
+      core_grpc:
+        host: ["iam-service:5051"]
+        tls:
+          enable: false
+          cert_path: /root/server-csr/IAM.pem
+        connection_per_host: 3
+      tasks:
+        scan_users_usage_time_expression: "0 0 * * * * *"
+        scan_projects_usage_time_expression: "0 0 * * * * *"
+        scan_projects_pre_expired_usage_time_expression: "0 0 0 * * * *"
+
+eventpublish:
+  eventpublishPlugin:
+    plugin:
+      name: EventPublishPlugin
+      instance: PegasusIAM - EventPublishPlugin
+      version: 0.1.2
+      socket_path: "/run/eventpublishplugin.sock"
+      logger:
+        system_log:
+          path: /var/log/ASUS
+          max_size: 10
+          max_backups: 5
+          max_age: 10
+          compress: false
+          mode: debug
+          show_in_console: true
+        event_log:
+          path: /var/log/ASUS
+          max_size: 10
+          max_backups: 5
+          max_age: 10
+      
+      tracer: #用不到
+        enable: false #關閉~
+        collector_endpoint: http://jaeger-service:14268/api/traces
+        timeout: 10
+
+      service: my_redis_sentinel
+      services:
+      - name: my_redis_sentinel
+        kind: redis_sentinel
+        hosts:
+        - redis-sentinel-service:26379
+        password: password
+        master_group_name: mymaster
+
+service:
+  # 2024/09/18 開發用暫時調整 enableNodePort = true， By James
+  enableNodePort: true
+
+serviceMonitor:
+  enable: false
+
+deployment:
+  spec: 
+
+# elasticSearch:   #filebeat，用不到砍掉
+#   hosts: ["https://10.247.4.7:9200","https://10.247.4.8:9200","https://10.247.4.9:9200"]
+#   index: accesslog-%{[service.auditLogName]}
+#   protocol: "https"
+#   pipeline: pipeline-%{[service.auditLogName]}
+#   preset: balanced
+#   username: "elastic"
+#   password: "password"
+#   ssl:
+#     enabled: true
+#     verification_mode: none
+

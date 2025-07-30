@@ -1,0 +1,14 @@
+app: ldap-service
+images:
+  ldapservice: Zillaforge/ldapservice:0.0.2
+  debugger: Zillaforge/debugger:1.0.2
+  
+service:
+  enableNodePort: true
+  externalIPs: []
+  ports:
+    ldap:
+      port: 3891
+      nodePort: 30891
+serviceMonitor:
+  enable: false

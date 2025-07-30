@@ -1,0 +1,4 @@
+apiVersion: v2
+name: vps
+version: 0.1.2
+appVersion: "0.1.2"

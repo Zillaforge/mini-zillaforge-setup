@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Values.app }}-network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: {{ .Values.app }}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          asus-paas: "true"
+    ports:
+    - protocol: TCP
+      port: {{ .Values.ports.adminHttp.port }}
+    - protocol: TCP
+      port: {{ .Values.ports.adminHttps.port }}
+  - from:
+    ports:
+    - protocol: TCP
+      port: {{ .Values.ports.proxyHttp.port }}
+    - protocol: TCP
+      port: {{ .Values.ports.proxyHttps.port }}

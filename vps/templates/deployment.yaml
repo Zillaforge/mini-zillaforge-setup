@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app }}-server
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.app }}-server
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app }}-server
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+    spec:
+      {{- if .Values.deployment.spec }}
+      {{- toYaml $.Values.deployment.spec | nindent 6 }}
+      {{- end }}
+      serviceAccountName: {{ $.Values.service_account }}
+      automountServiceAccountToken: true
+      containers:
+      - name: vps-server
+        image: {{ $.Values.images.vps.name }}:{{ $.Values.images.vps.version }}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: {{ .Values.service.ports.grpc.port }}
+        - containerPort: {{ .Values.service.ports.http.port }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/ASUS/virtual-platform-service.yaml
+          subPath: vps.yaml
+        - name: socket-volume
+          mountPath: /run
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        - name: host-ssl-ca-volume
+          mountPath: /etc/ssl/certs
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.service.ports.http.port}}
+          initialDelaySeconds: 10
+          periodSeconds: 15
+      - name: debugger
+        image: {{ $.Values.images.debugger.name }}:{{ $.Values.images.debugger.version }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/ASUS/virtual-platform-service.yaml
+          subPath: vps.yaml
+        - name: socket-volume
+          mountPath: /run
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        - name: host-ssl-ca-volume
+          mountPath: /etc/ssl/certs
+      {{- if .Values.filebeat_enabled }}
+      - name: filebeat
+        image: {{ $.Values.images.filebeat.name }}:{{ $.Values.images.filebeat.version }}
+        command: ['filebeat', '-e', '-strict.perms=false', '--path.config', "/etc/filebeat"]
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        - name: filebeat-config
+          mountPath: /etc/filebeat/filebeat.yml
+          subPath: filebeat.yml
+      {{- end }}
+      volumes:
+      - name: config-volume
+        configMap:
+          name: {{ $.Values.app }}-config
+      - name: log-volume
+        emptyDir: {}
+      - name: socket-volume
+        emptyDir: {}
+      - name: host-ssl-ca-volume
+        hostPath:
+          path: /etc/ssl/certs
+          type: Directory
+      {{- if .Values.filebeat_enabled }}
+      - name: filebeat-config
+        configMap:
+          name: {{ .Values.app }}-filebeat-config
+      {{- end }}

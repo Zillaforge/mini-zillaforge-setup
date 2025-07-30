@@ -1,0 +1,50 @@
+postgresql:
+  replicaCount: 1 
+  image:
+    repository: bitnami/postgresql-repmgr
+    tag: 11.14.0
+  nodeAffinityPreset:
+    type: "hard"
+    key: "kubernetes.io/hostname"
+    # Order: #1 -> #3 -> #2
+    values:
+      - instance-hx9bq8 #我自己的這台機器(虛擬機)node values
+  resourcesPreset: "nano"
+  username: postgresqlusername
+  password: "password"
+  repmgrPassword: "password"
+volumePermissions: #補這行 給權限，過了
+  enabled: true
+
+pgpool:
+  replicaCount: 1
+  image:
+    repository: bitnami/pgpool
+    tag: 4.2.4-debian-10-r41
+  nodeAffinityPreset:
+    type: "hard"
+    key: "kubernetes.io/hostname"
+    values:
+      - instance-hx9bq8 #自己機器的node values
+  resourcesPreset: "none"
+  resources:
+    requests:
+      memory: 1Gi
+    limits:
+      memory: 3Gi
+  adminPassword: "password"
+
+persistence:
+  existingClaim: "test-postgresql-postgresql-ha-pvc"  # 這行是使用已存在的 PVC 名稱。
+  sharePath: /trusted-cloud/local/postgres-ha/postgres #路徑
+
+backup:
+  enabled: false #不啟動備份
+  sharePath: /trusted-cloud/normal/services/backup/postgres-backup #路徑
+
+metrics:  
+  enabled: false 
+  service:
+    enabled: false 
+  serviceMonitor:
+    enabled: false

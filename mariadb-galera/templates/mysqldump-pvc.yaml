@@ -1,0 +1,17 @@
+{{- if .Values.mysqldump.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ printf "%s-mysqldump-pvc" (include "common.names.fullname" .) | trunc 63 | trimSuffix "-" }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+  {{- if .Values.commonLabels }}
+  {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+  {{- end }}
+spec:
+  storageClassName: {{ printf "%s-mysqldump-volume" (include "common.names.fullname" .) | trunc 63 | trimSuffix "-" }}
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+{{- end }}

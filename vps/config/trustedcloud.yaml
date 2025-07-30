@@ -1,0 +1,200 @@
+version: VERSION_REPLACED
+kind: VirtualPlatformService
+virtualplatformservice:
+  instance: VirtualPlatformService
+  developer: true
+  http:
+    host: 0.0.0.0:8110
+    # access_control:
+      # allow_origins: ["*"]
+      # allow_credentials: true
+      # allow_headers: ["Origin", "Content-Length", "Content-Type", "Authorization"]
+      # allow_methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
+      # expose_headers: ["host-id", "version-id", "location-id"]
+  grpc:
+    host: 0.0.0.0:5110
+    # unix_socket: 
+    #   path: /run/VirtualPlatformService.sock
+    #   conn_count: 20
+    # write_buffer_size: 32768
+    # read_buffer_size: 32768
+    # max_receive_message_size: 4194304
+    # max_send_message_size: 2147483647
+  logger:
+    system_log:
+      path: /var/log/ASUS/
+      # max_size: 10
+      # max_backups: 5
+      # max_age: 10
+      # compress: false
+      mode: debug
+      show_in_console: true
+    access_log:
+      path: /var/log/ASUS/
+      # max_size: 10
+      # max_backups: 5
+      # max_age: 10
+      # compress: false
+      # default_source_ip: 196.254.1.0
+    event_consume_log:
+      path: /var/log/ASUS/
+      # max_size: 10
+      # max_backups: 5
+      # max_age: 10
+      # compress: false
+  # tls:
+  #   enable: false
+  #   cert_path: tls/hcs/pegasus-hcs.pem
+  #   key_path: tls/hcs/pegasus-hcs-key.pem
+  tracer:
+    enable: false
+    host: http://jaeger-service.pegasus-system:14268/api/traces
+    timeout: 10
+storage:
+  provider: mariadb
+  mariadb:
+    host: mariadb-galera:3306
+    account: root
+    password: password
+    name: vps
+    # timeout: 5
+    # max_open_conns: 150
+    # conn_max_lifetime: 10
+    # max_idle_conns: 150
+authentication:
+  service: myiam
+event_consume:
+  # service 輸入指定的 Service Name 或 empty(不啟動) 
+  service: my_redis_sentinel
+  channels:
+  - FromIAM
+services:
+  - name: myiam
+    kind: iam
+    hosts: 
+      - iam-service:5051
+    tls:
+      enable: false
+      cert_path: /root/server-csr/IAM.pem
+    connection_per_host: 1 #3
+  - name: my_redis_sentinel
+    kind: redis_sentinel
+    hosts:
+    - redis-sentinel-service:26379
+    password: password
+    sentinel_password: ""
+    master_group_name: mymaster
+openstack:
+  auth_url: "http://192.168.0.200:5000" #!!!!!!openstack
+  domain: "trustedcloud"
+  admin_project: "trustedcloud"
+  admin: "test@trusted-cloud.nchc.org.tw"
+  admin_pwd: "password123"
+  ldap_enabled: true
+  pwd_method: "otp" # ["reverse", "otp"]
+  pwd_otp_secret: "pwd_otp_secret"
+  network:
+    cidr_blacklist: []
+  micro_version:
+    nova: "2.91" # since 2.92, nova API not allow to generate keypair
+    cinder: "3.70"
+    manila: "2.63"
+  project_name_iam_mapping: "Extra.iservice.projectSysCode" ################
+#  share_type: "default_share_type"
+  default_nova_az: "default"
+  gnocchi_granularity: 300
+  gnocchi_granularity_cpu_alarm: 60
+  enable_snapshot_actual_size: false #!!!
+  enable_gpu_quota: false   #!!!
+  manila:
+    enabled: false
+    share_type: "default_share_type"
+  vgpu_monitor:
+    enabled: false  #!!!
+    prometheus_addr: "http://" #!!!
+  roles:
+    - "admin"
+    - "member"
+  timeout: # seconds
+    connection: 5 
+    vol_create_with_server: 10
+  system_volume_type: "__DEFAULT__"
+  volume_type_whitelist: ["__DEFAULT__"]
+opsk_role_mapping:
+  TENANT_ADMIN:
+  - "member"
+  TENANT_MEMBER:
+  - "member"
+  vps_adm: # ${.openstack.admin)在每個project的role
+  - "admin"
+namespace:  #!!!
+  all:
+    - name: "public"
+      nameservers: ["140.110.16.1"]
+  default: "public"
+network_bonding_mode: true
+job_sync_interval:
+  iam: 300
+  compute: 10
+  net: 10
+  block: 10
+  lb: 10
+  quota: 60
+scheduler_duration: # every X hours, 0<X<=24 && 24%X==0
+  gc: 1
+  metering: 4
+available_district: "tw-tc-ad1"
+vm_customize:
+  yum_repo_rocky: "https://free.nchc.org.tw/rocky" # special characters: only support ['.','/']
+  apt_repo: "https://free.nchc.org.tw/ubuntu"
+  ntp_servers:
+    - "clock.nchc.org.tw"
+  timezone: "Asia/Taipei"
+  vgpu_license_token:  #!!!
+    public: []
+vrm:
+  host: virtual-registry-management-core-service:5106
+  tls:
+    enable: false
+    cert_path: /root/server-csr/IAM.pem
+memcache:
+  ttl: 60
+gpu_models:
+  passthrough: [] #!!!
+  #- "H100"
+  vgpu: [] #!!!
+  #- "V_H100"
+default_quotas:
+  vm: 20
+  vcpu: 40
+  ram: 81920 # in MiB
+  gpu: 0
+  block_size: 3072 # in GiB
+  network: 3
+  router: -1
+  floating_ip: 5
+  loadbalancer: -1
+  share: -1
+  share_size: 1024 # in GiB
+littlebell: # notification service
+  enable: false
+  host: http://simple-notification-service-service:8092
+  region: default
+  credential:
+    project_id: 14735dfa-5553-46cc-b4bd-405e711b223f
+    user_id: 4990ccdb-a9b1-49e5-91df-67c921601d81
+  arn: []
+metering:
+  enable: false
+  amqp:
+    account: root
+    password: password
+    host: rabbitmq:5672
+    manage_host: rabbitmq:15672
+    timeout: 5
+    rpc_timeout: 10
+    vhost: "/"
+    operation_connection_num: 2
+    channel_num: 1
+    replica_num: 0
+    consumer_connection_num: 1

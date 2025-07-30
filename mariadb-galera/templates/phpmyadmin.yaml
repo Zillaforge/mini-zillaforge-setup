@@ -1,0 +1,48 @@
+{{- if .Values.phpmyadmin.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}-phpmyadmin
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+  {{- if .Values.commonLabels }}
+  {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.phpmyadmin.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ printf "%s-phpmyadmin" (include "common.names.releaseName" .) }}
+  template:
+    metadata:
+      labels: {{- if .Values.podLabels }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.podLabels "context" $) | nindent 8 }}
+        {{- end }}
+        app: {{ printf "%s-phpmyadmin" (include "common.names.releaseName" .) }}
+    spec:
+      {{- include "mariadb-galera.imagePullSecrets" . | nindent 6 }}
+      affinity:
+        nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.nodeAffinityPreset.type "key" .Values.nodeAffinityPreset.key "values" .Values.nodeAffinityPreset.values) | nindent 10 }}
+      automountServiceAccountToken: false
+      containers:
+      - name: phpmyadmin
+        image: {{ .Values.phpmyadmin.image.name}}
+        ports:
+          - containerPort: 80
+        env:
+          - name: PMA_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: {{ printf "%s-configuration" (include "common.names.fullname" .) }}
+                key: DATABASE_HOST
+          - name: PMA_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: {{ printf "%s-configuration" (include "common.names.fullname" .) }}
+                key: DATABASE_PORT
+          - name: MYSQL_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "mariadb-galera.secretName" . }}
+                key: mariadb-root-password
+{{- end }}

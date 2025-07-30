@@ -12,5 +12,10 @@ sudo ./install_packages.sh
 sudo ./build_images.sh
 
 # Install k3s & Helm, Then import built image 
-sudo ./prework.sh
+./prework.sh
+#Install
+./install.sh
+#Confirm that all pods are ready before use
+./config.sh
+./config2.sh
 ```

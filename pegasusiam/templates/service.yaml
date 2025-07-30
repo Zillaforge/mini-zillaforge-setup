@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.app }}-service
+  labels:
+    app: {{ .Values.app }}
+    type: service
+spec:
+  {{- if eq .Values.service.enableNodePort true }}
+  type: NodePort
+  {{- end }}
+  selector:
+    app: iam
+  ports:
+    - name: ldap-port
+      port: {{ .Values.service.ports.ldap.port }}
+      targetPort: {{ .Values.service.ports.ldap.port }}
+      {{- if eq .Values.service.enableNodePort true }}
+      nodePort:  {{ .Values.service.ports.ldap.nodePort }}
+      {{- end }}
+      protocol: TCP
+    - name: grpc-port
+      port: {{ .Values.service.ports.grpc.port }}
+      targetPort: {{ .Values.service.ports.grpc.port }}
+      {{- if eq .Values.service.enableNodePort true }}
+      nodePort:  {{ .Values.service.ports.grpc.nodePort }}
+      {{- end }}
+      protocol: TCP
+    - name: http-port
+      port: {{ .Values.service.ports.http.port }}
+      targetPort: {{ .Values.service.ports.http.port }}
+      {{- if eq .Values.service.enableNodePort true }}
+      nodePort:  {{ .Values.service.ports.http.nodePort }}
+      {{- end }}
+      protocol: TCP

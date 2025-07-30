@@ -1,0 +1,41 @@
+{{- if .Values.scheduler.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app }}-scheduler-deployment
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.app }}-scheduler-deployment
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app }}-scheduler-deployment
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+    spec:
+      containers:
+      - name: {{ .Values.app }}
+        image: {{ .Values.images.iam }}
+        imagePullPolicy: IfNotPresent #Always
+        command: ["./PegasusIAM", "-s", "/etc/ASUS/iam-scheduler.yaml", "-c", "/etc/ASUS/pegasus-iam.yaml","scheduler","start"]
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/ASUS
+        - name: log-volume
+          mountPath: /var/log/ASUS
+      - name: debugger
+        image: {{ .Values.images.debugger }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/ASUS
+        - name: log-volume
+          mountPath: /var/log/ASUS
+      volumes:
+      - name: config-volume
+        configMap:
+          name: {{ .Values.app }}-config
+      - name: log-volume
+        emptyDir: {}
+{{- end }}

@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: site-storage-ingress
+  namespace: default
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: sitestorage.hostip.nip.io
+    http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service: 
+              name: site-storage-service-service
+              port:
+                number: 8080
+  - host: '*.sitestorage.hostip.nip.io'
+    http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service: 
+              name: site-storage-service-service
+              port:
+                number: 8080  

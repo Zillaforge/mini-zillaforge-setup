@@ -1,0 +1,257 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vps-tmp-config
+data:
+  vps.yaml: |-
+    version: 0.2.2.1
+    kind: VirtualPlatformService
+    virtualplatformservice:
+      instance: VirtualPlatformService
+      developer: true
+      http:
+        host: 0.0.0.0:8110
+        # access_control:
+          # allow_origins: ["*"]
+          # allow_credentials: true
+          # allow_headers: ["Origin", "Content-Length", "Content-Type", "Authorization"]
+          # allow_methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
+          # expose_headers: ["host-id", "version-id", "location-id"]
+      grpc:
+        host: 0.0.0.0:5110
+        # unix_socket:
+        #   path: /run/VirtualPlatformService.sock
+        #   conn_count: 20
+        # write_buffer_size: 32768
+        # read_buffer_size: 32768
+        # max_receive_message_size: 4194304
+        # max_send_message_size: 2147483647
+      logger:
+        system_log:
+          path: /var/log/ASUS/
+          # max_size: 10
+          # max_backups: 5
+          # max_age: 10
+          # compress: false
+          mode: debug
+          show_in_console: true
+        access_log:
+          path: /var/log/ASUS/
+          # max_size: 10
+          # max_backups: 5
+          # max_age: 10
+          # compress: false
+          # default_source_ip: 196.254.1.0
+        event_consume_log:
+          path: /var/log/ASUS/
+          # max_size: 10
+          # max_backups: 5
+          # max_age: 10
+          # compress: false
+      # tls:
+      #   enable: false
+      #   cert_path: tls/hcs/pegasus-hcs.pem
+      #   key_path: tls/hcs/pegasus-hcs-key.pem
+      tracer:
+        enable: true
+        host: http://jaeger-service.sensimesh-system:14268/api/traces
+        timeout: 10
+    storage:
+      provider: mariadb
+      mariadb:
+        host: mariadb-galera.pegasus-system:3306
+        account: root
+        password: password
+        name: vps_sensimesh
+        # timeout: 5
+        # max_open_conns: 150
+        # conn_max_lifetime: 10
+        # max_idle_conns: 150
+    authentication:
+      service: myiam
+    event_consume:
+      # service 輸入指定的 Service Name 或 empty(不啟動)
+      service: my_redis_sentinel
+      channels:
+      - FromIAM
+    services:
+      - name: myiam
+        kind: iam
+        hosts:
+          - iam-service.pegasus-system:5051
+        tls:
+          enable: false
+          cert_path: /root/server-csr/IAM.pem
+        connection_per_host: 3
+      - name: my_redis_sentinel
+        kind: redis_sentinel
+        hosts:
+        - redis-sentinel-service.pegasus-system:26379
+        password: password@redis
+        sentinel_password: ""
+        master_group_name: mymaster
+    openstack:
+      auth_url: "http://10.231.0.100:5000/v3"
+      domain: "trusted-cloud"
+      admin_project: "trusted-cloud"
+      admin: "opstk-system@trusted-cloud.nchc.org.tw"
+      admin_pwd: "9fsYW28Ct6xaF54V"
+      ldap_enabled: true
+      pwd_method: "otp" # ["reverse", "otp"]
+      pwd_otp_secret: "pwd_otp_secret"
+      network:
+        cidr_blacklist: []
+      micro_version:
+        nova: "2.90" # since 2.92, nova API not allow to generate keypair
+        cinder: "3.68"
+        manila: "2.63"
+      project_name_iam_mapping: "Extra.iservice.projectSysCode"
+    #  share_type: "default_share_type"
+      default_nova_az: "nova"
+      enable_snapshot_actual_size: false
+      enable_gpu_quota: false
+      manila:
+        enabled: true
+        share_type: "tenant_share_type"
+      vgpu_monitor:
+        enabled: false
+      roles:
+        - "admin"
+        - "_member_"
+        - "creator"
+      timeout: # seconds
+        connection: 5
+        vol_create_with_server: 10
+      system_volume_type: "CubeStorage"
+    opsk_role_mapping:
+      TENANT_ADMIN:
+      - "_member_"
+      - "creator"
+      TENANT_MEMBER:
+      - "_member_"
+      - "creator"
+      vps_adm: # ${.openstack.admin)在每個project的role
+      - "admin"
+    namespace:
+      all:
+        - name: "public"
+          nameservers: ["140.110.142.1", "140.110.16.1"]
+      default: "public"
+    network_bonding_mode: true
+    job_sync_interval:
+      iam: 300
+      compute: 10
+      net: 10
+      block: 10
+      lb: 10
+      quota: 60
+    scheduler_duration: # every X hours, 0<X<=24 && 24%X==0
+      gc: 1
+      metering: 4
+    available_district: "tw-tc-ad2"
+    vm_customize:
+      yum_repo_rocky: "https://free.nchc.org.tw/rocky" # special characters: only support ['.','/']
+      apt_repo: "https://free.nchc.org.tw/ubuntu"
+      ntp_servers:
+        - "clock.nchc.org.tw"
+      timezone: "Asia/Taipei"
+      vnc_url: "https://console.sensimesh.nchc.org.tw:6080"
+      vgpu_license_token:
+        public: ""
+        private: ""
+    vrm:
+      host: virtual-registry-management-core-service.sensimesh-system:5106
+      tls:
+        enable: false
+        cert_path: /root/server-csr/IAM.pem
+    memcache:
+      ttl: 60
+    gpu_models:
+      passthrough: []
+      vgpu: []
+    default_quotas:
+      vm: 20
+      vcpu: 40
+      ram: 81920 # in MiB
+      gpu: 0
+      block_size: 3072 # in GiB
+      network: 3
+      router: -1
+      floating_ip: 5
+      loadbalancer: -1
+      share: -1
+      share_size: 1024 # in GiB
+    littlebell: # notification service
+      enable: true
+      host: http://simple-notification-service-service.pegasus-system:8092
+      region: default
+      credential:
+        project_id: 14735dfa-5553-46cc-b4bd-405e711b223f
+        user_id: 4990ccdb-a9b1-49e5-91df-67c921601d81
+      arn: arn:aws:sns:default:14735dfa-5553-46cc-b4bd-405e711b223f:lbm-svc-event-publish-topic
+    metering:
+      enable: true
+      amqp:
+        account: root
+        password: 6Uy7Cx34YH3trErt
+        host: rabbitmq.pegasus-system:5672
+        manage_host: rabbitmq.pegasus-system:15672
+        timeout: 5
+        rpc_timeout: 10
+        vhost: "/"
+        operation_connection_num: 2
+        channel_num: 1
+        replica_num: 0
+        consumer_connection_num: 1
+
+
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vps-tmp-job
+spec:
+  template:
+    metadata:
+      name: vps-tmp-job
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      serviceAccountName: "sensimesh-system-admin"
+      automountServiceAccountToken: true
+      containers:
+      - name: vps-tmp-job
+        image: 10.247.4.4:80/trusted-cloud/virtual-platform-service:0.2.2.1
+        imagePullPolicy: Always
+        command:
+        - "./VirtualPlatformService"
+        - "-c"
+        - "/etc/ASUS/virtual-platform-service.yaml"
+        - "localtest"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/ASUS/virtual-platform-service.yaml
+          subPath: vps.yaml
+        - name: socket-volume
+          mountPath: /run
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        - name: host-ssl-ca-volume
+          mountPath: /etc/ssl/certs
+
+      restartPolicy: Never
+      volumes:
+      - name: config-volume
+        configMap:
+          name: vps-tmp-config
+      - name: log-volume
+        emptyDir: {}
+      - name: socket-volume
+        emptyDir: {}
+      - name: host-ssl-ca-volume
+        hostPath:
+          path: /etc/ssl/certs
+          type: Directory
+

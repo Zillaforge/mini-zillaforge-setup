@@ -1,0 +1,92 @@
+{{- if .Values.mysqldump.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ printf "%s-mysqldump-cronjob" (include "common.names.fullname" .) | trunc 63 | trimSuffix "-" }}
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+  {{- if .Values.commonLabels }}
+  {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+  {{- end }}
+spec:
+  schedule: {{ .Values.mysqldump.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+        spec:
+          affinity:
+            nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.nodeAffinityPreset.type "key" .Values.nodeAffinityPreset.key "values" .Values.nodeAffinityPreset.values) | nindent 14 }}
+          initContainers:
+            - name: volume-permissions
+              image: {{ .Values.mysqldump.image.initContainers }}
+              command:
+              - /bin/bash
+              - -ec
+              - chmod -R 777 /db
+              securityContext:
+                runAsUser: 0
+              volumeMounts:
+              - name: mysqldump-volume
+                mountPath: /db
+          containers:
+            - name: mysqldump
+              image: {{ .Values.mysqldump.image.name}}
+              imagePullPolicy: Always
+              env:
+                - name: DB_DUMP_TARGET
+                  value: /db
+                - name: DB_SERVER
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ printf "%s-configuration" (include "common.names.fullname" .) }}
+                      key: DATABASE_HOST
+                - name: DB_PORT
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ printf "%s-configuration" (include "common.names.fullname" .) }}
+                      key: DATABASE_PORT
+                - name: DB_USER
+                  value: root
+                - name: DB_PASS
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ template "mariadb-galera.secretName" . }}
+                      key: mariadb-root-password
+                - name: RUN_ONCE
+                  value: "true"
+                - name: DB_DUMP_BY_SCHEMA
+                  value: "true"
+                {{- if .Values.mysqldump.notification.enabled }}
+                - name: DB_NOTIFICATION
+                  value: {{ .Values.mysqldump.notification.enabled | quote}}
+                - name: RECEIVER
+                  value: {{ .Values.mysqldump.notification.receiver }}
+                - name: ENVIRONMENT
+                  value: {{ .Values.mysqldump.notification.environment }}
+                - name: SENDER
+                  value: {{ .Values.mysqldump.notification.sender }}
+                {{- end }}
+              volumeMounts:
+                - mountPath: /db
+                  name: mysqldump-volume
+                {{- if .Values.mysqldump.notification.enabled }}
+                - name: ssmtp-conf
+                  mountPath: /etc/ssmtp/ssmtp.conf
+                  subPath: ssmtp.conf
+                {{- end }}
+          volumes:
+          - name: mysqldump-volume
+            persistentVolumeClaim:
+              claimName: {{ .Values.mysqldump.persistence.existingClaim }}
+          {{- if .Values.mysqldump.notification.enabled }}
+          - name: ssmtp-conf
+            configMap:
+              name: {{ printf "%s-mysqldump-configmap" (include "common.names.fullname" .) }}
+              items:
+              - key: ssmtp.conf
+                path: ssmtp.conf
+          {{- end }}
+          restartPolicy: OnFailure
+      backoffLimit: 1
+{{- end }}

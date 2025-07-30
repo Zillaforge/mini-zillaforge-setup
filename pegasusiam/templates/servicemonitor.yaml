@@ -1,0 +1,19 @@
+{{- if eq .Values.serviceMonitor.enable true }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Values.app }}-service-monitor
+  labels:
+    app: {{ .Values.app }}
+spec:
+  endpoints:
+  - path: /iam/api/v1/admin/metrics
+    port: http-port
+  namespaceSelector:
+    matchNames:
+    - pegasus-system
+  selector:
+    matchLabels:
+      app: {{ .Values.app }}
+      type: service
+{{- end }}

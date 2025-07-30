@@ -1,0 +1,13 @@
+config_file: "config/trustedcloud.yaml"
+
+service:
+  enableNodePort: false
+
+deployment:
+  spec:
+
+filebeat_enabled: false
+elasticSearch:
+  hosts: ["10.247.4.7:9200","10.247.4.8:9200","10.247.4.9:9200"]
+  username: "aaa"
+  password: "bbb"

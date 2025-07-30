@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.app }}-migrations
+spec:
+  template:
+    metadata:
+      name: {{ .Values.app }}-migrations
+    spec:
+      containers:
+      - name: {{ .Values.app }}-migrations
+        image: {{ .Values.images.kong }}
+        command: [ "/bin/sh", "-c", "kong migrations bootstrap && kong migrations up && kong migrations finish" ]
+        env:
+        - name: KONG_PG_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PG_HOST
+        - name: KONG_PG_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PG_PORT
+        - name: KONG_PG_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.app }}-secret
+              key: KONG_PG_USER
+        - name: KONG_PG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.app }}-secret
+              key: KONG_PG_PASSWORD
+        - name: KONG_PG_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.app }}-config
+              key: KONG_PG_DATABASE
+      restartPolicy: OnFailure

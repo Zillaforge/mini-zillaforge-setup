@@ -1,0 +1,24 @@
+{{- if .Values.images.konginitializer }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.app }}-init
+spec:
+  template:
+    metadata:
+      name: {{ .Values.app }}-init
+    spec:
+      containers:
+      - name: {{ .Values.app }}-init
+        image: {{ .Values.images.konginitializer }}
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: kong-data-path
+          subPath: {{ .Values.kongData.filename }}
+          mountPath: /tmp/kong.yaml
+      restartPolicy: Never
+      volumes:
+      - name: kong-data-path
+        configMap:
+          name: {{ .Values.app }}-init-config
+{{- end }}

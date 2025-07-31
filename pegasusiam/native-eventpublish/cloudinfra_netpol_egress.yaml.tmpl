@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: "network-egress-{{.uuid}}"
+  namespace: "{{.id}}"
+  labels:
+  {{ range $key, $value := .labelselector }}
+    "{{ $key }}": "{{ $value }}"
+  {{ end }}
+spec:
+  egress:
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - "{{.nfs_ip}}"
+  podSelector: {}
+  policyTypes:
+  - Egress

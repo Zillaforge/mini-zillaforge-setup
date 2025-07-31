@@ -1,0 +1,37 @@
+
+{{- if and .Values.backup.enabled }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ template "common.names.fullname" . }}-pgdump-pv
+  namespace: {{ .Release.Namespace | quote }}
+  {{- $labels := include "common.tplvalues.merge" ( dict "values" ( list .Values.backup.cronjob.labels .Values.commonLabels ) "context" . ) }}
+  labels: {{- include "common.labels.standard" ( dict "customLabels" $labels "context" $ ) | nindent 4 }}
+    app.kubernetes.io/component: pg_dumpall
+  {{- if or .Values.backup.cronjob.annotations .Values.commonAnnotations .Values.backup.cronjob.storage.resourcePolicy }}
+  annotations:
+    {{- if or .Values.backup.cronjob.annotations .Values.commonAnnotations }}
+    {{- $annotations := include "common.tplvalues.merge" ( dict "values" ( list .Values.backup.cronjob.annotations .Values.commonAnnotations ) "context" . ) }}
+    {{- include "common.tplvalues.render" ( dict "value" $annotations "context" $) | nindent 4 }}
+    {{- end }}
+    {{- if .Values.backup.cronjob.storage.resourcePolicy }}
+    helm.sh/resource-policy: {{ .Values.backup.cronjob.storage.resourcePolicy | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  storageClassName: {{ template "common.names.fullname" . }}-pgdump
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: {{ .Values.postgresql.nodeAffinityPreset.key}}
+          operator: Exists
+  capacity:
+    storage: {{ .Values.backup.cronjob.storage.size | quote }}
+  accessModes:
+  {{- range .Values.backup.cronjob.storage.accessModes }}
+    - {{ . | quote }}
+  {{- end }}
+  local:
+    path: {{ .Values.backup.sharePath }}
+{{- end }}

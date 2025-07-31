@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: "network-{{.id}}"
+  namespace: "{{.id}}"
+spec:
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          project: "{{.id}}"
+    - namespaceSelector:
+        matchLabels:
+          asus-paas-kong: "true"
+    - namespaceSelector:
+        matchLabels:
+          asus-paas: "true"
+  podSelector:
+    matchLabels:
+      network-policy: "network-{{.id}}"
+  policyTypes:
+  - Ingress

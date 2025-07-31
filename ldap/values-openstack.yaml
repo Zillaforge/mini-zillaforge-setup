@@ -1,0 +1,49 @@
+app: ldap-service-openstack
+
+images:
+  ldapservice: Zillaforge/ldapservice:0.0.5
+  debugger: Zillaforge/debugger:1.0.2
+
+configmap:
+  version: 0.0.5
+  kind: LDAPService
+  ldapservice:
+    instance: LDAPService-OpenStack
+    developer: true
+    host: 0.0.0.0:3891
+    allow_operations: ['*']
+    logger:
+      system_log:
+        path: /var/log/ASUS
+        max_size: 10
+        max_backups: 5
+        max_age: 10
+        compress: false
+        mode: debug
+        show_in_console: true
+  authentication:
+    service: myiam
+  verification:
+    otp:
+      namespaces: ["ci.asus.com","iservice.nchc.org.tw"]
+      secret_key: pwd_otp_secret
+    extended:
+      users:
+      - user_id: ffffffff-ffff-ffff-ffff-fffffffffffe
+        account: test@trusted-cloud.nchc.org.tw
+        password: password123
+        namespace: ci.asus.com
+        type: password
+  services:
+  - name: myiam
+    kind: iam
+    hosts: 
+    - iam-service:5051
+    tls:
+      enable: false
+      cert_path: /root/server-csr/IAM.pem
+    connection_per_host: 3
+
+service:
+  enableNodePort: ture
+

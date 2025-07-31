@@ -1,0 +1,34 @@
+{{- if .Values.maxscale.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "common.names.fullname" . }}
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+  {{- if .Values.commonLabels }}
+  {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.maxscale.service.type }}
+  ports:
+    - name: readwrite
+      port: {{ .Values.maxscale.service.readwrite.port }}
+      targetPort: 4006
+      protocol: TCP
+      {{- if and .Values.maxscale.service.readwrite.nodePort (or (eq .Values.maxscale.service.type "NodePort")) }}
+      nodePort: {{ .Values.maxscale.service.readwrite.nodePort }}
+      {{- else if eq .Values.maxscale.service.type "ClusterIP" }}
+      nodePort: null
+      {{- end }}
+    - name: restapi
+      port: {{ .Values.maxscale.service.restapi.port }}
+      targetPort: 8989
+      protocol: TCP
+      {{- if and .Values.maxscale.service.restapi.nodePort (or (eq .Values.maxscale.service.type "NodePort")) }}
+      nodePort: {{ .Values.maxscale.service.restapi.nodePort }}
+      {{- else if eq .Values.maxscale.service.type "ClusterIP" }}
+      nodePort: null
+      {{- end }}
+  selector:
+    app: {{ printf "%s-maxscale" (include "common.names.releaseName" .) }}
+{{- end }}

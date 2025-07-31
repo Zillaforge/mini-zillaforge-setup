@@ -1,0 +1,64 @@
+app: vps
+images:
+  vps:
+    name: Zillaforge/virtual-platform-service
+    version: 0.3.3
+  debugger: 
+    name: Zillaforge/debugger
+    version: 1.0.2
+  filebeat:
+    name: elastic/filebeat
+    version: 8.14.3
+
+deployment:
+  spec:
+    nodeSelector:
+      asus-paas: "false"
+    tolerations:
+    - key: node-role.kubernetes.io/master
+      effect: NoSchedule
+
+service:
+  enableNodePort: true
+  ports:
+    grpc:
+      port: 5110
+      nodePort: 35110
+    http:
+      port: 8110
+      nodePort: 38110
+
+jobs:
+  sync-iam:
+    cmd: ["job", "sync", "iam", "all"]
+  event-iam:
+    cmd: ["job", "event", "iam"]
+  sync-compute:
+    cmd: ["job", "sync", "opsk", "compute"]
+  sync-network:
+    cmd: ["job", "sync", "opsk", "network"]
+  sync-block:
+    cmd: ["job", "sync", "opsk", "block"]
+  sync-lb:
+    cmd: ["job", "sync", "opsk", "lb"]
+  sync-quota:
+    cmd: ["job", "sync", "opsk", "quota"]
+  scheduler-gc:
+    cmd: ["scheduler", "gc"]
+  scheduler-metering:
+    cmd: ["scheduler", "metering"]
+
+service_account: "pegasus-system-admin"
+
+filebeat_enabled: false
+elasticSearch:
+  hosts: []
+  index: accesslog-%{[service.auditLogName]}
+  protocol: "https"
+  pipeline: pipeline-%{[service.auditLogName]}
+  preset: balanced
+  username: ""
+  password: ""
+  ssl:
+    enabled: true
+    verification_mode: none

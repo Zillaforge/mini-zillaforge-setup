@@ -1,0 +1,4 @@
+apiVersion: v2
+name: pegasusiam
+version: 1.8.3-1
+appVersion: "1.8.3"

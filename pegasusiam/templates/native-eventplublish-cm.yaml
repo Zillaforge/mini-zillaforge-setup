@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.app }}-native-eventpublish-config
+data:
+{{ (.Files.Glob "native-eventpublish/*").AsConfig | indent 2 }}
+

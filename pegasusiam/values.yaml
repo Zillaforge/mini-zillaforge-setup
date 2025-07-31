@@ -1,0 +1,43 @@
+app: iam
+
+images:
+  iam: Zillaforge/iam:1.7.0-f3c4860c
+  # eventpublishPlugin: Zillaforge/event-publish-plugin:0.0.1-20231221-dev1
+  # kubernetesPlugin: Zillaforge/kubernetes-plugin:1.6.0
+  # rmqconvertPlugin: Zillaforge/rmqconvert-plugin:1.6.1
+  # harborPlugin: asuscloud:31350/pegasus-cloud/iam/harbor-plugin:1.1.0
+  # ldapAuthPlugin: asuscloud:31350/pegasus-cloud/iam/ldap-auth-plugin:1.4.0-26889d44
+  # tainanAuthPlugin: asuscloud:31350/pegasus-cloud/iam/tainanaisso-auth-plugin:0.4.1
+  # twccAuthPlugin: asuscloud:31350/pegasus-cloud/iam/twccsso-auth-plugin:0.1.3
+  debugger: Zillaforge/debugger:1.0.2
+  # filebeat: docker.elastic.co/beats/filebeat:7.12.1
+
+eventpublish:
+
+deployment:
+  spec:
+    nodeSelector:
+      asus-paas: "true"
+    tolerations:
+    - key: node-role.kubernetes.io/master
+      effect: NoSchedule
+service:
+  enableNodePort: true
+  ports:
+    grpc:
+      port: 5051
+      nodePort: 31051
+    http:
+      port: 8084
+      nodePort: 31084
+    ldap:
+      port: 3891
+      nodePort: 31891
+
+serviceMonitor:
+  enable: false
+
+elasticSearch:
+  hosts: ["elastic-stack-svc.log-service.svc:9200"]
+  index: cloudinfra-%{+YYYY.ww}
+  # pipeline: cloudinfra-action-pipeline 

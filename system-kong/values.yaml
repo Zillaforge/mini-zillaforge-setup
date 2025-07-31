@@ -1,0 +1,54 @@
+app: system-kong
+
+images:
+    kong: kong/kong:3.7.1-ubuntu
+    # filebeat: docker.elastic.co/beats/filebeat:7.12.1
+    # kongAuthPlugin: Zillaforge/kong-auth-plugin:1.1.4
+    # kongLogPlugin: Zillaforge/kong-log-plugin:0.0.3-ubuntu
+    # kongHamPlugin: Zillaforge/kong-ham-plugin:0.4.0-5741c3a7
+    # grafanaAuthProxy: Zillaforge/grafana-auth-proxy:1.3
+    # vmsAuthProxy: Zillaforge/vms-auth-proxy:1.3
+    # kongIngressPlugin: Zillaforge/kong-ingress-plugin:1.0.0-ubuntu
+    kongDebugger: Zillaforge/debugger:1.0.2
+    # konginitializer: Zillaforge/konginitializer:0.0.1
+    # monitorAuthPlugin: 10.247.4.4:80/trusted-cloud/monitor-auth-plugin:1.0.0-41edd1b
+    kongResponseTransformerPlugin: Zillaforge/kong-response-transformer-plugin:0.0.1
+
+service:
+    enableNodePort: true
+    externalIPs: []
+
+ports:
+    proxyHttp:
+        port: 8000
+        nodePort: 31382
+    proxyHttps:
+        port: 8443
+        nodePort: 31383
+    adminHttp:
+        port: 8001
+        nodePort: 31384
+    adminHttps:
+        port: 8444
+        nodePort: 31385
+
+enableTLS: false
+
+postgresql:
+    host: asus-paas-psql-db.dbrmq.svc.cluster.local
+    port: 5432
+    user: postgresqlpassuser
+    password: password
+    database: system-kong-database
+
+elasticSearch:
+    hosts: ["elastic-stack-svc.log-service.svc:9200"]
+    index: apilogs-%{+xxxx.ww}
+
+deployment:
+  spec:
+    nodeSelector:
+      asus-paas: "true"
+    tolerations:
+    - key: node-role.kubernetes.io/master
+      effect: NoSchedule

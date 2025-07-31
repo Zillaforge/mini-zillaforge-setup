@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app }}-deployment
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: user-portal
+    kind: deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.app }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app }}
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+    spec:
+      containers:
+      - image: {{ .Values.images.portal }}
+        name: {{ .Values.app }}
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - configMapRef:
+            name: {{ .Values.app }}-env-config
+        ports:
+        - containerPort: {{ .Values.service.portal.port }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.service.portal.port }}
+          initialDelaySeconds: 10
+          periodSeconds: 15
+      volumes:
+      - name: host-ssl-ca-volume
+        hostPath:
+          path: /etc/ssl/certs
+          type: Directory
+      - name: {{ .Values.app }}-env-config
+        configMap:
+          name: {{ .Values.app }}-env-config

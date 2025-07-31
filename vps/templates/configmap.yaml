@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.app }}-config
+data:
+  vps.yaml: |-
+{{ printf "%s" .Values.config_file | .Files.Get | replace "VERSION_REPLACED" .Values.images.vps.version | indent 4 }}

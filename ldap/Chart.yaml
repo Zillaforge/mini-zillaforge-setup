@@ -1,0 +1,4 @@
+apiVersion: v2
+name: ldap-service
+version: 0.0.4
+appVersion: "0.0.4-1"

@@ -1,0 +1,57 @@
+image:
+  name: bitnami/mariadb-galera:10.5.18
+
+initContainers:
+  - name: volume-permissions
+    image: bitnami/os-shell
+    command:
+    - /bin/bash
+    - -ec
+    - chown -R 1001:1001 /bitnami/mariadb
+    securityContext:
+      runAsUser: 0
+    volumeMounts:
+    - name: data
+      mountPath: /bitnami/mariadb
+
+replicaCount: 1  
+
+rootUser:
+  password: password
+
+galera:
+  mariabackup:
+    password: password
+
+phpmyadmin:
+  enabled: true
+  image:
+    name: bitnami/phpmyadmin
+  nodePort: null
+
+persistence:
+  sharePath: /trusted-cloud/local/mariadb #重新安裝時需要刪資料夾
+
+# order : #2 -> #1 -> #3
+nodeAffinityPreset:
+  values:
+    - instance-hx9bq8 #自己的hostname名稱
+
+mysqldump:  #備份用，這邊關掉
+  enabled: false
+  name: trusted-cloud/mysql-backup:v0.1.0
+  volumePath: /trusted-cloud/normal/services/backup/maria-database
+  notification:
+    enabled: false
+  image:
+    name: trusted-cloud/mysql-backup:v0.1.0
+    initContainers: trusted-cloud/bitnami-shell
+
+maxscale:
+  enabled: false
+
+metrics:
+  enabled: false 
+  repository: bitnami/mysqld-exporter
+  serviceMonitor:
+    enabled: false 

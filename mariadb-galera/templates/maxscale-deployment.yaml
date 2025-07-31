@@ -1,0 +1,63 @@
+{{- if .Values.maxscale.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ printf "%s-maxscale" (include "common.names.releaseName" .) }}
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+  {{- if .Values.commonLabels }}
+  {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+  {{- end }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ printf "%s-maxscale" (include "common.names.releaseName" .) }}
+  template:
+    metadata:
+      labels: {{- if .Values.podLabels }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.podLabels "context" $) | nindent 8 }}
+        {{- end }}
+        app: {{ printf "%s-maxscale" (include "common.names.releaseName" .) }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      affinity:
+        nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.nodeAffinityPreset.type "key" .Values.nodeAffinityPreset.key "values" .Values.nodeAffinityPreset.values) | nindent 10 }}
+      containers:
+        - name: maxscale
+          image: {{ .Values.maxscale.image.name }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: readwrite
+              containerPort: 4006
+              protocol: TCP
+            - name: restapi
+              containerPort: 8989
+              protocol: TCP
+          volumeMounts:
+            - name: maxscale-conf
+              mountPath: /etc/maxscale.cnf.d/my-maxscale.cnf
+              subPath: maxscale.conf
+            - name: maxscale-hostpath-volume
+              mountPath: /var/log/maxscale
+      volumes:
+        - name: maxscale-conf
+          configMap:
+            name: {{ printf "%s-maxscale-configmap" (include "common.names.releaseName" .) }}
+        - name: maxscale-hostpath-volume
+          hostPath:
+            path: {{ .Values.maxscale.volumePath }}
+            type: DirectoryOrCreate
+      initContainers:
+        - name: volume-permissions
+          image: {{ .Values.maxscale.image.initContainers }}
+          command:
+          - /bin/bash
+          - -ec
+          - chmod -R 777 /var/log/maxscale
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+          - name: maxscale-hostpath-volume
+            mountPath: /var/log/maxscale
+{{- end }}

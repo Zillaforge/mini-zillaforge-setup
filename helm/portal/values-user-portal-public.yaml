@@ -1,0 +1,18 @@
+app: user-portal-public
+images:
+  portal: Zillaforge/trust-portal:user-pub-v1.0.507081000
+environments:
+  NODE_ENV: production
+  API_URL: http://kong.hostip.nip.io
+  BASE_DOMAIN: www.hostip.nip.io
+  DATA_STORAGE: http://storage.hostip.nip.io
+  DATA_EXCHANGE: 
+  DATA_RELEASE: 
+  IMAGE_REGISTRY: 
+  ADMIN_PANEL: http://admin.hostip.nip.io
+  DOCUMENT_URL: 
+service:
+  enableNodePort: false
+  externalIPs: []
+  portal:
+    port: 80

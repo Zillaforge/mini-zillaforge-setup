@@ -1,0 +1,109 @@
+{{- if .Values.core.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app }}-core-deployment
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.app }}-core-deployment
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app }}-core-deployment
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+    spec:
+      initContainers:
+      {{- if .Values.images.eventpublishPlugin }}
+      - name: event-publish-plugin
+        image: {{ .Values.images.eventpublishPlugin }}
+        imagePullPolicy: IfNotPresent
+        command: ['/bin/sh', '-c', "cp -r /plugin/* /var/lib/ASUS/vrm/eventpublish"]
+        volumeMounts:
+        - name: eventpublish-plugin-volume
+          mountPath: /var/lib/ASUS/vrm/eventpublish
+        - name: eventpublish-volume
+          mountPath: /plugin/config/eventpublishplugin.yaml
+          subPath: eventpublishplugin.yaml
+      {{- end }}
+      containers:
+      - name: {{ .Values.app }}-core
+        image: {{ .Values.images.vrm }}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: {{ .Values.service.core.grpc.port }}
+        - containerPort: {{ .Values.service.core.http.port }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/ASUS
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        - name: socket-volume
+          mountPath: /run
+        - name: eventpublish-plugin-volume
+          mountPath: /var/lib/ASUS/vrm/eventpublish
+        {{- range $vol := .Values.volumes }}
+        - name: {{ $vol.name }}-data-volume
+          mountPath: {{ $vol.mount_path }}
+        {{- end }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.service.core.http.port }}
+          initialDelaySeconds: 10
+          periodSeconds: 15
+      - name: debugger
+        image: {{ .Values.images.debugger }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/ASUS
+        - name: socket-volume
+          mountPath: /run
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        - name: eventpublish-plugin-volume
+          mountPath: /var/lib/ASUS/vrm/eventpublish
+        {{- range $vol := .Values.volumes }}
+        - name: {{ $vol.name }}-data-volume
+          mountPath: {{ $vol.mount_path }}
+        {{- end }}
+      {{- if .Values.images.filebeat }}
+      - name: filebeat
+        image: {{ .Values.images.filebeat }}
+        command: ['filebeat', '-e', '-strict.perms=false', '--path.config', "/etc/filebeat"]
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        - name: filebeat-config
+          mountPath: /etc/filebeat/filebeat.yml
+          subPath: filebeat.yml
+      {{- end }}
+      volumes:
+      - name: config-volume
+        configMap:
+          name: {{ .Values.app }}-config
+      - name: log-volume
+        emptyDir: {}
+      - name: socket-volume
+        emptyDir: {}
+      - name: eventpublish-plugin-volume
+        emptyDir: {}
+      - name: eventpublish-volume
+        configMap:
+          name: {{ .Values.app }}-eventpublish-config
+      {{- range $vol := .Values.volumes }}
+      - name: {{ $vol.name }}-data-volume
+        persistentVolumeClaim:
+          claimName: {{ $.Values.app }}-{{ $vol.name }}-pvc
+      {{- end }}
+      {{- if .Values.images.filebeat }}
+      - name: filebeat-config
+        configMap:
+          name: {{ .Values.app }}-filebeat-config
+      {{- end}}
+      # imagePullSecrets:
+      # - name: regcred
+{{- end }}

@@ -1,0 +1,21 @@
+app: admin-panel-public
+images:
+  portal: Zillaforge/trust-portal:admin-pub-5ba07e2
+environments:
+  API_URL: http://kong.hostip.nip.io
+  BASE_DOMAIN: www.hostip.nip.io
+  ENDPOINT_CLOUD_STORAGE: http://sitestorage.hostip.nip.io
+  ENDPOINT_SITE_STORAGE:
+  ENDPOINT_DOCS:
+  ENDPOINT_GRAFANA:
+  ENDPOINT_KIBANA:
+  ENDPOINT_CEPH:
+  ENDPOINT_OPENSTACK: #
+  IMAGE_REGISTRY:   #
+  USER_PORTAL:  http://www.hostip.nip.io #nip 
+  ENDPOINT_DOCS:   #
+service:
+  enableNodePort: false
+  externalIPs: []
+  portal:
+    port: 80

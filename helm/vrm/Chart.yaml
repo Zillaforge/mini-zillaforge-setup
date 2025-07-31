@@ -1,0 +1,4 @@
+apiVersion: v2
+name: vrm
+version: 0.0.5
+appVersion: "0.0.5-1"

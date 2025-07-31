@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ .Values.app }}-config
-data:
-  virtual-registry-management.yaml: |
-{{- toYaml .Values.core.configmap | nindent 4 }}
-  vrm-scheduler.yaml: |
-{{- toYaml .Values.scheduler.configmap | nindent 4 }}

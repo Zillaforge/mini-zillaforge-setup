@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ .Values.app }}-eventpublish-config
-data:
-{{- if .Values.images.eventpublishPlugin }}
-  eventpublishplugin.yaml: |
-{{- toYaml .Values.eventpublish.eventpublishPlugin | nindent 4 }}
-{{- end }}

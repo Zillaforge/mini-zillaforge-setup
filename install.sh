@@ -70,43 +70,6 @@ helm install systemkong ./helm/system-kong -f ./helm/system-kong/values-public.y
 
 echo "✅ Core services installed"
 
-# Configure and install VPS and VRM services
-echo "⚙️ Configuring VPS and VRM services..."
-
-# Check if OpenStack is available and get keystone URL
-if command -v openstack &> /dev/null && [ -f "/etc/kolla/clouds.yaml" ]; then
-    echo "🔧 OpenStack detected, configuring keystone integration..."
-    source /home/ubuntu/venv/bin/activate 2>/dev/null || true
-    export OS_CLIENT_CONFIG_FILE=/etc/kolla/clouds.yaml
-    export OS_CLOUD=kolla-admin
-    
-    # Get keystone URL for VPS and VRM configuration
-    KEYSTONE_URL=$(openstack endpoint list --service identity --interface public -f value -c URL 2>/dev/null || echo "http://localhost:5000/v3")
-    echo "Keystone URL: $KEYSTONE_URL"
-    
-    # Update VPS configuration
-    sed -i "s#keystone_url#$KEYSTONE_URL#g" ./helm/vps/config/trustedcloud.yaml
-    
-    # Update VRM configuration
-    sed -i "s#keystone_url#$KEYSTONE_URL#g" ./helm/vrm/values-trustedcloud.yaml
-    
-    deactivate 2>/dev/null || true
-else
-    echo "⚠️ OpenStack not detected, using default keystone URL..."
-    sed -i "s#keystone_url#http://localhost:5000/v3#g" ./helm/vps/config/trustedcloud.yaml
-    sed -i "s#keystone_url#http://localhost:5000/v3#g" ./helm/vrm/values-trustedcloud.yaml
-fi
-
-# Install VRM (Virtual Resource Manager)
-echo "🔧 Installing VRM..."
-helm install vrm ./helm/vrm -f ./helm/vrm/values-trustedcloud.yaml
-
-# Install VPS (Virtual Platform Service)
-echo "🔧 Installing VPS..."
-helm install vps ./helm/vps -f ./helm/vps/values-trustedcloud.yaml
-
-echo "✅ VRM and VPS installed"
-
 # Install portals
 echo "🌐 Installing portals..."
 
@@ -123,6 +86,118 @@ echo "🔄 Applying ingress configuration..."
 kubectl apply -f ./helm/ingress/
 
 echo "✅ Ingress configuration applied"
+
+
+echo "waiting for IAM deployments to be ready..."
+kubectl wait --for=condition=available deployment/iam-deployment --timeout=1200s
+
+echo "waiting for LDAP deployments to be ready..."
+kubectl wait --for=condition=available deployment/ldap-service-openstack-deployment --timeout=1200s
+
+
+
+
+
+# Add OpenStack users (if OpenStack is available)
+
+echo "👤 Adding OpenStack users (if available)..."
+source /home/ubuntu/venv/bin/activate
+
+if command -v openstack &> /dev/null && [ -f "/etc/kolla/clouds.yaml" ]; then
+    echo "🔧 OpenStack detected, adding users..."
+    
+    # Activate OpenStack environment
+    export OS_CLIENT_CONFIG_FILE=/etc/kolla/clouds.yaml
+    export OS_CLOUD=kolla-admin
+    
+    # OpenStack user configuration parameters
+    USER_NAME="test@trusted-cloud.nchc.org.tw"
+    PROJECT_NAME="trustedcloud"
+    DOMAIN_NAME="trustedcloud"
+    ROLE_NAME="admin"
+
+    echo "🔎 Getting User UUID..."
+    USER_ID=$(openstack user list --domain "$DOMAIN_NAME" -f value -c ID -c Name | grep "$USER_NAME" | awk '{print $1}')
+
+    if [ -z "$USER_ID" ]; then
+        echo "❌ Cannot find user: $USER_NAME in domain: $DOMAIN_NAME"
+    else
+        echo "✅ User ID: $USER_ID"
+
+        echo "🔎 Getting Project UUID..."
+        PROJECT_ID=$(openstack project list -f value -c ID -c Name | grep "$PROJECT_NAME" | awk '{print $1}')
+
+        if [ -z "$PROJECT_ID" ]; then
+            echo "❌ Cannot find project: $PROJECT_NAME"
+        else
+            echo "✅ Project ID: $PROJECT_ID"
+
+            echo "⚙️ Adding Project Role..."
+            openstack role add --project "$PROJECT_ID" --user "$USER_ID" "$ROLE_NAME" 2>/dev/null || echo "Project role may already exist"
+
+            echo "⚙️ Adding System Role..."
+            openstack role add --user "$USER_ID" --system all "$ROLE_NAME" 2>/dev/null || echo "System role may already exist"
+
+            echo "⚙️ Adding Domain Role..."
+            openstack role add --user "$USER_ID" --domain "$DOMAIN_NAME" "$ROLE_NAME" 2>/dev/null || echo "Domain role may already exist"
+
+            echo "🎉 All roles have been successfully added!"
+        fi
+    fi
+    
+    echo "✅ OpenStack user configuration completed"
+else
+    echo "⚠️ OpenStack not available, EXIT"
+    exit 1
+fi
+
+deactivate
+
+
+# Configure and install VPS and VRM services
+echo "⚙️ Configuring VPS and VRM services..."
+
+source /home/ubuntu/venv/bin/activate
+# Check if OpenStack is available and get keystone URL
+if command -v openstack &> /dev/null && [ -f "/etc/kolla/clouds.yaml" ]; then
+    echo "🔧 OpenStack detected, configuring keystone integration..."
+    export OS_CLIENT_CONFIG_FILE=/etc/kolla/clouds.yaml
+    export OS_CLOUD=kolla-admin
+    
+    # Get keystone URL for VPS and VRM configuration
+    KEYSTONE_URL=$(openstack endpoint list --service identity --interface public -f value -c URL 2>/dev/null || echo "http://localhost:5000/v3")
+    echo "Keystone URL: $KEYSTONE_URL"
+    
+    # Update VPS configuration
+    sed -i "s#keystone_url#$KEYSTONE_URL#g" ./helm/vps/config/trustedcloud.yaml
+    
+    # Update VRM configuration
+    sed -i "s#keystone_url#$KEYSTONE_URL#g" ./helm/vrm/values-trustedcloud.yaml
+    
+else
+    echo "⚠️ OpenStack not detected, EXIT"
+    exit 1
+fi
+deactivate
+
+
+# Install VRM (Virtual Resource Manager)
+echo "🔧 Installing VRM..."
+helm install vrm ./helm/vrm -f ./helm/vrm/values-trustedcloud.yaml
+
+# Install VPS (Virtual Platform Service)
+echo "🔧 Installing VPS..."
+helm install vps ./helm/vps -f ./helm/vps/values-trustedcloud.yaml
+
+
+echo "waiting for VRM deployments to be ready..."
+kubectl wait --for=condition=available deployment/virtual-registry-management-core-deployment --timeout=1200s
+
+echo "waiting for VPS deployments to be ready..."
+kubectl wait --for=condition=available deployment/vps-server --timeout=1200s
+
+
+echo "✅ VRM and VPS installed"
 
 echo "=========================================="
 echo "Zillaforge Installation completed successfully!"

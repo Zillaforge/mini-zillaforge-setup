@@ -188,56 +188,6 @@ sudo chmod -R 775 /trusted-cloud
 
 echo "✅ Directories created"
 
-# # Add OpenStack users (if OpenStack is available)
-# echo "👤 Adding OpenStack users (if available)..."
-# if command -v openstack &> /dev/null && [ -f "/etc/kolla/clouds.yaml" ] && [ -f "/home/ubuntu/venv/bin/activate" ]; then
-#     echo "🔧 OpenStack detected, adding users..."
-    
-#     # Activate OpenStack environment
-#     source /home/ubuntu/venv/bin/activate
-#     export OS_CLIENT_CONFIG_FILE=/etc/kolla/clouds.yaml
-#     export OS_CLOUD=kolla-admin
-    
-#     # OpenStack user configuration parameters
-#     USER_NAME="test@trusted-cloud.nchc.org.tw"
-#     PROJECT_NAME="trustedcloud"
-#     DOMAIN_NAME="trustedcloud"
-#     ROLE_NAME="admin"
-
-#     echo "🔎 Getting User UUID..."
-#     USER_ID=$(openstack user list --domain "$DOMAIN_NAME" -f value -c ID -c Name | grep "$USER_NAME" | awk '{print $1}')
-
-#     if [ -z "$USER_ID" ]; then
-#         echo "❌ Cannot find user: $USER_NAME in domain: $DOMAIN_NAME"
-#     else
-#         echo "✅ User ID: $USER_ID"
-
-#         echo "🔎 Getting Project UUID..."
-#         PROJECT_ID=$(openstack project list -f value -c ID -c Name | grep "$PROJECT_NAME" | awk '{print $1}')
-
-#         if [ -z "$PROJECT_ID" ]; then
-#             echo "❌ Cannot find project: $PROJECT_NAME"
-#         else
-#             echo "✅ Project ID: $PROJECT_ID"
-
-#             echo "⚙️ Adding Project Role..."
-#             openstack role add --project "$PROJECT_ID" --user "$USER_ID" "$ROLE_NAME" 2>/dev/null || echo "Project role may already exist"
-
-#             echo "⚙️ Adding System Role..."
-#             openstack role add --user "$USER_ID" --system all "$ROLE_NAME" 2>/dev/null || echo "System role may already exist"
-
-#             echo "⚙️ Adding Domain Role..."
-#             openstack role add --user "$USER_ID" --domain "$DOMAIN_NAME" "$ROLE_NAME" 2>/dev/null || echo "Domain role may already exist"
-
-#             echo "🎉 All roles have been successfully added!"
-#         fi
-#     fi
-    
-#     deactivate
-#     echo "✅ OpenStack user configuration completed"
-# else
-#     echo "⚠️ OpenStack not available, skipping user addition"
-# fi
 
 echo "=========================================="
 echo "Prerequisites setup completed successfully!"

@@ -26,8 +26,9 @@ sed -i "s/hostip/$hostip_dash/g" ./ingress/www.yaml
 sed -i "s/hostip/$hostip_dash/g" ./ingress/user.yaml
 sed -i "s/hostip/$hostip_dash/g" ./portal/values-user-portal-public.yaml
 sed -i "s/hostip/$hostip_dash/g" ./portal/values-admin-panel-public.yaml
-#sed -i "s/hostip/$hostip_dash/g" ./ingress/ssscloudstorage.yaml
-#sed -i "s/hostip/$hostip_dash/g" ./ingress/cloudstorage.yaml
+sed -i "s/hostip/$hostip_dash/g" ./ingress/ssscloudstorage.yaml
+sed -i "s/hostip/$hostip_dash/g" ./ingress/cloudstorage.yaml
+sed -i "s/hostip/$hostip_dash/g" ./cloud-storage/values-dss-public.yaml
 
 
 echo "change hostname and hostip....done"
@@ -60,10 +61,5 @@ helm install admin-portal ./portal -f ./portal/values-admin-panel-public.yaml
 #user-portal
 helm install user-portal ./portal -f ./portal/values-user-portal-public.yaml
 
-#cloud-storage
-#helm install cloudstorage ./cloud-storage/ -f ./cloud-storage/values-dss-public.yaml
-
-#site-cloud-storage
-#helm install sss ./cloud-storage/ -f ./cloud-storage/values-site-storage.yaml 
 #ingress
 kubectl apply -f ./ingress/

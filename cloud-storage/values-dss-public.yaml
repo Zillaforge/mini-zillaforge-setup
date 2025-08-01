@@ -1,0 +1,308 @@
+app: data-storage-service-public
+
+images:
+  cloudstorage: Zillaforge/cloud-storage:2.10.6
+  eventpublishPlugin: Zillaforge/event-publish-plugin:0.1.2
+  debugger: Zillaforge/debugger:1.0.2
+  #filebeat: elastic/filebeat:8.14.3
+
+core:
+  enabled: true
+  configmap:
+    version: 2.10.6
+    kind: CloudStorage
+    cloudstorage:
+      instance: Data-Storage-Service(CS-RW)
+      http_attributes:
+        access_control:
+          allow_origins: ["*"]
+          allow_headers: ["Origin", "Content-Length", "Content-Type", "Authorization", "X-Amz-Content-Sha256", "X-Amz-User-Agent", "X-Amz-Date", "Content-Md5", "Transparent-Project", "X-Amz-Copy-Source", "X-Amz-Meta-Cloudstorage-Operation", "amz-sdk-invocation-id", "amz-sdk-request"]
+      grpc_host: 0.0.0.0:5052
+      http_root_path_prefix: /dss-public
+      datausage_grpc_host: cloud-storage-datausage-service:5054
+      unix_socket_attributes:
+        conn_count: 20
+      tsid: 73cab32a-f027-4d97-877a-6f9122e9e9c8
+      mode: developer
+      cbc_bytes_keyring: 333474c28f09465384def6e6128f36cf
+      system_buckets: []
+      invalid_bucket_names: ["system", "cloud-backup-status"]
+      logger:
+        system_log:
+          path: /var/log/ASUS
+          max_size: 50
+          max_backups: 5
+          max_age: 10
+          compress: false
+          mode: debug
+          show_in_console: true
+        multipart_log:
+          path: /var/log/ASUS
+          max_size: 50
+          max_backups: 5
+          max_age: 10
+          compress: false
+      tracer:
+        enable: false ##
+        collector_endpoint: http://jaeger-service:14268/api/traces
+        timeout: 10
+      tasks:
+        buckets_sync_interval: 14400
+        projects_sync_interval: 14400
+      quota:
+        default_hard_limit_bytes: -1
+        default_soft_limit_bytes: -1
+      use_default_bucket_acls: true
+      default_bucket_acls: []
+      # - authenticated_users:read
+      # - authenticated_users:write
+      role_acls:
+        tenant_admin:
+        - full_control
+        tenant_owner:
+        - full_control
+        bucket_creator:
+        - full_control
+      block_size_mechanism:
+        version: v2
+        service: trusted_cloud_mariadb
+      virtual_hosted_style:
+        domain: storage.hostip.nip.io
+      scopes:
+        availability_district: tw-tc-ad1
+    metadata:
+      service: trusted_cloud_mariadb
+    filesystem:
+      provider: local
+      check_interval: 31536000
+      local:
+        path: /var/lib/ASUS/cloudstorage/data
+        mount: false
+    authentication:
+      provider: iam
+      iam:
+        hosts:
+        - iam-service:5051
+        tls:
+          enable: false
+          cert_path: /root/server-csr/IAM.pem
+        connection_per_host: 3
+    storage:
+      service: trusted_cloud_mariadb
+    plugin:
+      event_publish:
+        enable: false
+    event_consume:
+      service: trusted_cloud_redis_sentinel
+      redis_sentinel:
+        channels:
+        - FromIAM
+    services:
+    - name: trusted_cloud_redis_sentinel
+      kind: redis_sentinel
+      hosts:
+      - redis-sentinel-service:26379
+      password: password
+      master_group_name: mymaster
+    - name: trusted_cloud_mariadb
+      kind: mariadb
+      host: mariadb-galera:3306
+      account: root
+      password: password
+      database: cs_data_storage_service_public
+      timeout: 5
+      max_open_conns: 150
+      conn_max_lifetime: 10
+      max_idle_conns: 150
+    cache:
+      enable: false
+      ttl: 20
+      service: trusted_cloud_redis_sentinel
+      provider: ""
+    event_publish:
+      plugins:
+      - name: EventPublishPlugin
+        type: grpc
+        binary_path: "/var/lib/ASUS/cloudstorage/eventpublish/eventpublishplugin"
+        config_path: "/var/lib/ASUS/cloudstorage/eventpublish/config/eventpublishplugin.yaml"
+        socket_path: /run/eventpublishplugin.sock
+        start_cmd_args:
+          --redis-channel: FromCSDSSPublic
+    metering_service:
+      account: user
+      password: password
+      host: rabbitmq:5672
+      manage_host: rabbitmq:15672
+      timeout: 5
+      rpc_timeout: 10
+      vhost: "/"
+      operation_connection_num: 2
+      channel_num: 1
+      replica_num: 0
+      consumer_connection_num: 1
+
+jobScheduler:
+  enabled: true
+  configmap:
+    version: 2.10.6
+    kind: CloudStorage
+    cloud_storage_scheduler:
+      instance: Data-Storage-Service-Public-Schduler
+      core_grpc:
+        hosts: ["data-storage-service-public-service:5052"]  #data-storage-service-public-service.public-system
+      tasks:
+        used_capacity_metering:
+          cron_expression: "0 0 * * * * *"
+          metering_service:
+            exchange: mts
+            routing_key: "dss-public-data-storage"
+
+dataUsage:
+  enabled: true
+  configmap:
+    version: 2.10.6
+    kind: DataUsage
+    datausage:
+      instance: Data-Storage-Service-Public-DataUsage
+      http_address: 0.0.0.0:8081
+      grpc_host: 0.0.0.0:5054
+      cloudstorage_grpc:
+        hosts: 
+        - data-storage-service-public-service:5052  
+        tls:
+          enable: false
+          cert_path: /root/server-csr/IAM.pem
+        connection_per_host: 3
+      path: /var/lib/ASUS/cloudstorage/data ######################
+      db_path: tmp/data/
+      tls:
+        enable: false
+        cert_path: tls/datausage/pegasus-datausage.pem
+        key_path: tls/datausage/pegasus-datausage-key.pem
+      tasks:
+        enable: true ####
+        # datausage_grab_interval: 14400
+        datausage_grab_interval: 60
+        datausage_per_project_interval: 30
+      logger:
+        system_log:
+          path: /var/log/ASUS
+          max_size: 10
+          max_backups: 5
+          max_age: 10
+          compress: false
+          mode: debug
+          show_in_console: true
+      auto_update_metadata:
+        enable: false ###
+        interval: 1
+        workers: 2
+      tracer: 
+        enable: false
+        collector_endpoint: http://jaeger-service:14268/api/traces
+        timeout: 10
+      quota:
+        auto_aware_soft_limit_ratio: 0.7
+      scopes:
+        availability_district: tw-tc-ad1
+    authentication:
+      service: trusted_cloud_iam
+    filesystem:
+      provider: local
+      local:
+        path: tmp/data
+    metadata:
+      service: trusted_cloud_mariadb
+    services:
+    - name: trusted_cloud_mariadb
+      kind: mariadb
+      host: mariadb-galera:3306
+      account: root
+      password: password
+      database: cs_data_storage_service_public
+      timeout: 5
+      max_open_conns: 150
+      conn_max_lifetime: 10
+      max_idle_conns: 150
+    - name: trusted_cloud_iam
+      kind: iam
+      hosts: 
+      - iam-service:5051
+      tls:
+        enable: false
+        cert_path: /root/server-csr/IAM.pem
+      connection_per_host: 3
+    littlebell:
+      host: http://simple-notification-service-service:8092
+      region: default
+      credential:
+        project_id: 
+        user_id: 
+      arn: 
+
+eventpublish:
+  eventpublishPlugin:
+    plugin:
+      name: EventPublishPlugin
+      instance: Data-Storage-Service(CS-RW) - EventPublishPlugin
+      version: 0.1.2
+      socket_path: "/run/eventpublishplugin.sock"
+      logger:
+        system_log:
+          path: /var/log/ASUS
+          max_size: 10
+          max_backups: 5
+          max_age: 10
+          compress: false
+          mode: debug
+          show_in_console: true
+        event_log:
+          path: /var/log/ASUS
+          max_size: 10
+          max_backups: 5
+          max_age: 10
+      tracer:
+        enable: false
+        collector_endpoint: http://jaeger-service:14268/api/traces
+        timeout: 10
+      service: trusted_cloud_redis_sentinel
+      services:
+      - name: trusted_cloud_redis_sentinel
+        kind: redis_sentinel
+        hosts:
+        - redis-sentinel-service:26379
+        password: password
+        master_group_name: mymaster
+
+service:
+  core:
+    enableNodePort: false
+    grpc:
+      port: 5052
+    http:
+      port: 8080
+
+volume:
+  type: local
+  local:
+    path: /trusted-cloud/normal/storage
+
+serviceMonitor:
+  enable: false
+
+deployment:
+  spec:
+
+# elasticSearch:
+#   hosts: ["https://10.247.4.7:9200","https://10.247.4.8:9200","https://10.247.4.9:9200"]
+#   index: accesslog-%{[service.auditLogName]}
+#   protocol: "https"
+#   pipeline: pipeline-%{[service.auditLogName]}
+#   auditLogName: "Data-Storage-Service-Public"
+#   preset: balanced
+#   username: "elastic"
+#   password: "aaa"
+#   ssl:
+#     enabled: false
+#     verification_mode: none
+

@@ -1,0 +1,131 @@
+{{- if .Values.core.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app }}-core-deployment
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.app }}-core-deployment
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app }}-core-deployment
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+    spec:
+      automountServiceAccountToken: true
+      initContainers:
+      {{- if .Values.images.eventpublishPlugin }}
+      - name: event-publish-plugin
+        image: {{ .Values.images.eventpublishPlugin }}
+        imagePullPolicy: IfNotPresent
+        command: ['/bin/sh', '-c', "cp -r /plugin/* /var/lib/ASUS/cloudstorage/eventpublish"]
+        volumeMounts:
+        - name: eventpublish-plugin-volume
+          mountPath: /var/lib/ASUS/cloudstorage/eventpublish
+        - name: eventpublish-volume
+          mountPath: /plugin/config/eventpublishplugin.yaml
+          subPath: eventpublishplugin.yaml
+      {{- end }}
+      {{- if .Values.images.k8sVolumePlugin }}
+      - name: kubernetes-volume-plugin
+        image: {{ .Values.images.k8sVolumePlugin }}
+        imagePullPolicy: IfNotPresent
+        command: ['/bin/sh', '-c', "cp -r /plugin/* /var/lib/ASUS/cloudstorage/eventpublish"]
+        volumeMounts:
+        - name: eventpublish-plugin-volume
+          mountPath: /var/lib/ASUS/cloudstorage/eventpublish
+      {{- end }}
+      {{- if .Values.images.s3RMQnotificationPlugin }}
+      - name: s3-rmq-notification
+        image: {{ .Values.images.s3RMQnotificationPlugin }}
+        imagePullPolicy: IfNotPresent
+        command: ['/bin/sh', '-c', "cp -r /plugin/* /var/lib/ASUS/cloudstorage/eventpublish"]
+        volumeMounts:
+        - name: eventpublish-plugin-volume
+          mountPath: /var/lib/ASUS/cloudstorage/eventpublish
+      {{- end }}
+      containers:
+      - name: {{ .Values.app }}-core
+        image: {{ .Values.images.cloudstorage }}
+        imagePullPolicy: IfNotPresent
+        command: ["./CloudStorage", "--global-config", "/etc/ASUS/cloud-storage-global.yaml", "cloudstorage", "start"]
+        ports:
+        - containerPort: {{ .Values.service.core.grpc.port }}
+        - containerPort: {{ .Values.service.core.http.port }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/ASUS
+        - name: certificate-volume
+          mountPath: /var/lib/ASUS/cloudstorage/plugin/pki
+        - name: socket-volume
+          mountPath: /run
+        - name: plugin-volume
+          mountPath: /var/lib/ASUS/cloudstorage/plugin/event_publish
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        - name: data-volume
+          mountPath: {{ .Values.core.configmap.filesystem.local.path }}
+        - name: eventpublish-plugin-volume
+          mountPath: /var/lib/ASUS/cloudstorage/eventpublish
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.service.core.http.port }}
+          initialDelaySeconds: 10
+          periodSeconds: 15
+      {{- if .Values.images.debugger }}
+      - name: debugger
+        image: {{ .Values.images.debugger }}
+        volumeMounts:
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        - name: data-volume
+          mountPath: {{ .Values.core.configmap.filesystem.local.path }}
+        - name: eventpublish-plugin-volume
+          mountPath: /var/lib/ASUS/cloudstorage/eventpublish
+        - name: socket-volume
+          mountPath: /run
+      {{- end }}
+      {{- if .Values.images.filebeat }}
+      - name: filebeat
+        image: {{ .Values.images.filebeat }}
+        command: ['filebeat', '-e', '-strict.perms=false', '--path.config', "/etc/filebeat"]
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        - name: filebeat-config
+          mountPath: /etc/filebeat/filebeat.yml
+          subPath: filebeat.yml
+      {{- end }}
+      volumes:
+      - name: config-volume
+        configMap:
+          name: {{ .Values.app }}-config
+      - name: certificate-volume
+        configMap:
+          name: {{ .Values.app }}-upstream-certificate
+      - name: eventpublish-volume
+        configMap:
+          name: {{ .Values.app }}-eventpublish-config
+      - name: eventpublish-plugin-volume
+        emptyDir: {}
+      - name: log-volume
+        emptyDir: {}
+      - name: plugin-volume
+        emptyDir: {}
+      - name: socket-volume
+        emptyDir: {}
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: {{ .Values.app }}-pvc
+      - name: filebeat-config
+        configMap:
+          name: {{ .Values.app }}-filebeat-config
+      {{- if .Values.deployment.spec }}
+      {{- toYaml .Values.deployment.spec | nindent 6 }}
+      {{- end }}
+{{- end }}

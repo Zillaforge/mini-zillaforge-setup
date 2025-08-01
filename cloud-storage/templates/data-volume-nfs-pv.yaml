@@ -1,0 +1,15 @@
+{{- if eq .Values.volume.type "nfs" }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Values.app }}-nfs-pv
+spec:
+  storageClassName: {{ .Values.app }}-nfs-volume
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: {{ .Values.volume.nfs.server }}
+    path: {{ .Values.volume.nfs.path }}
+{{- end }}

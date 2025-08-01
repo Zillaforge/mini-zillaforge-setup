@@ -52,6 +52,11 @@ helm install vrm  ./vrm -f ./vrm/values-trustedcloud.yaml
 #vps
 helm install vps ./vps -f ./vps/values-trustedcloud.yaml
 
+#cloud-storage
+helm install cloudstorage ./cloud-storage/ -f ./cloud-storage/values-dss-public.yaml
+
+site-cloud-storage
+helm install sss ./cloud-storage/ -f ./cloud-storage/values-site-storage.yaml
 
 #更新kong用的資料庫
 kong_pod=$(kubectl get pod | grep public-system-kong | awk '{print $1}' | head -n 1)

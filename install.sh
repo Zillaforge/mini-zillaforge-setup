@@ -60,10 +60,5 @@ helm install admin-portal ./portal -f ./portal/values-admin-panel-public.yaml
 #user-portal
 helm install user-portal ./portal -f ./portal/values-user-portal-public.yaml
 
-#cloud-storage
-#helm install cloudstorage ./cloud-storage/ -f ./cloud-storage/values-dss-public.yaml
-
-#site-cloud-storage
-#helm install sss ./cloud-storage/ -f ./cloud-storage/values-site-storage.yaml 
 #ingress
 kubectl apply -f ./ingress/

@@ -26,8 +26,9 @@ sed -i "s/hostip/$hostip_dash/g" ./ingress/www.yaml
 sed -i "s/hostip/$hostip_dash/g" ./ingress/user.yaml
 sed -i "s/hostip/$hostip_dash/g" ./portal/values-user-portal-public.yaml
 sed -i "s/hostip/$hostip_dash/g" ./portal/values-admin-panel-public.yaml
-#sed -i "s/hostip/$hostip_dash/g" ./ingress/ssscloudstorage.yaml
-#sed -i "s/hostip/$hostip_dash/g" ./ingress/cloudstorage.yaml
+sed -i "s/hostip/$hostip_dash/g" ./ingress/ssscloudstorage.yaml
+sed -i "s/hostip/$hostip_dash/g" ./ingress/cloudstorage.yaml
+sed -i "s/hostip/$hostip_dash/g" ./cloud-storage/values-dss-public.yaml
 
 
 echo "change hostname and hostip....done"

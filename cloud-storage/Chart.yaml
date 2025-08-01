@@ -1,0 +1,4 @@
+apiVersion: v2
+name: cloudstorage
+version: v2.10.6-1
+appVersion: "v2.10.6"

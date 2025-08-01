@@ -1,0 +1,11 @@
+app: cloud-storage
+
+service:
+  enableNodePort: true
+  externalIPs: []
+  core:
+    ports:
+      grpc:
+        port: 5052
+      http:
+        port: 8080

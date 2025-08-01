@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.app }}-config
+data:
+  cloud-storage-default.yaml: |
+    cloudstorage:
+      http_address: 0.0.0.0:{{ .Values.service.core.http.port }}
+  cloud-storage-global.yaml: |
+{{- toYaml .Values.core.configmap | nindent 4 }}
+  job-scheduler.yaml: |
+{{- toYaml .Values.jobScheduler.configmap | nindent 4 }}
+  data-usage-global.yaml: |
+{{- toYaml .Values.dataUsage.configmap | nindent 4 }}

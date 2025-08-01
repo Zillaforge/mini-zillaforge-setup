@@ -7,6 +7,7 @@ echo "=========================================="
 echo "Running Prerequisites Setup"
 echo "=========================================="
 
+
 # Update system packages
 echo "📦 Updating system packages..."
 sudo apt update
@@ -15,27 +16,31 @@ sudo apt update
 echo "📦 Installing required packages..."
 sudo apt install make jq -y
 
-# Install Docker
+
+
+# Install Docker from Official Site
 echo "🐳 Installing Docker..."
-sudo apt-get install -y apt-transport-https ca-certificates curl gnupg
 
-# Download Docker packages
-curl -Ol https://download.docker.com/linux/ubuntu/dists/jammy/pool/stable/amd64/containerd.io_1.7.25-1_amd64.deb
-curl -Ol https://download.docker.com/linux/ubuntu/dists/jammy/pool/stable/amd64/docker-ce_27.5.1-1~ubuntu.22.04~jammy_amd64.deb
-curl -Ol https://download.docker.com/linux/ubuntu/dists/jammy/pool/stable/amd64/docker-ce-rootless-extras_27.5.1-1~ubuntu.22.04~jammy_amd64.deb
-curl -Ol https://download.docker.com/linux/ubuntu/dists/jammy/pool/stable/amd64/docker-ce-cli_27.5.1-1~ubuntu.22.04~jammy_amd64.deb
+for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt-get remove $pkg; done
 
-sudo dpkg -i *.deb
-rm *.deb
+# Add Docker's official GPG key:
+sudo apt-get update
+sudo apt-get install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add the repository to Apt sources:
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
 sudo usermod -aG docker $USER
-sudo systemctl start docker
-sudo systemctl enable docker
-
-# Configure containerd
-sudo mkdir -p /etc/containerd
-sudo containerd config default | sudo tee /etc/containerd/config.toml
-sudo sed -i "s/SystemdCgroup = false/SystemdCgroup = true/g" /etc/containerd/config.toml
-sudo systemctl restart containerd
+sudo newgrp docker
 
 echo "✅ Docker installation completed"
 
@@ -69,17 +74,17 @@ echo "Changing to utility-image-builder directory..."
 cd utility-image-builder
 
 echo "Building debugger image..."
-make release-image-debugger
+sudo make release-image-debugger
 
 echo "Building golang image..."
-make release-image-golang
+sudo make release-image-golang
 
 echo "Utility image builder completed successfully!"
 
 # Clean up utility-image-builder
 echo "Cleaning up: removing utility-image-builder repository..."
 cd /tmp
-rm -rf utility-image-builder
+sudo rm -rf utility-image-builder
 
 # Build service repositories
 repos=("ldapservice" "pegasusiam" "virtualregistrymanagement" "virtualplatformservice" "cloudstorage" "kongauthplugin" "eventpublishplugin" "kongresponsetransformerplugin" "adminpanel" "userportal")
@@ -97,16 +102,16 @@ for repo in "${repos[@]}"; do
 
     if [[ "$repo" == "adminpanel" || "$repo" == "userportal" ]]; then
         echo "Building $repo image with release-image-public..."
-        make release-image-public
+        sudo make release-image-public
     else
         echo "Building $repo image with RELEASE_MODE=prod..."
-        make RELEASE_MODE=prod release-image
+        sudo make RELEASE_MODE=prod release-image
     fi
 
     echo "$repo build completed!"
     echo "Cleaning up: removing $repo repository..."
     cd /tmp
-    rm -rf "$repo"
+    sudo rm -rf "$repo"
     echo "----------------------------------------"
 done
 
@@ -119,15 +124,15 @@ echo "Cleaning up base images..."
 
 for image in "${base_images[@]}"; do
     echo "Removing tags for $image images..."
-    docker images --format "table {{.Repository}}:{{.Tag}}" | grep "^$image:" | while read image_tag; do
+    sudo docker images --format "table {{.Repository}}:{{.Tag}}" | grep "^$image:" | while read image_tag; do
         if [[ "$image_tag" != "$image:<none>" ]]; then
-            docker rmi "$image_tag" 2>/dev/null || echo "Could not remove tag: $image_tag"
+            sudo docker rmi "$image_tag" 2>/dev/null || echo "Could not remove tag: $image_tag"
         fi
     done 2>/dev/null || echo "No $image images to untag"
 done
 
 echo "Removing dangling images..."
-docker image prune -f 2>/dev/null || echo "No dangling images to remove"
+sudo docker image prune -f 2>/dev/null || echo "No dangling images to remove"
 
 echo "Base image cleanup completed!"
 
@@ -135,12 +140,12 @@ echo "Base image cleanup completed!"
 echo "💾 Saving Zillaforge images as tar files..."
 cd /tmp
 
-docker images --format "{{.Repository}}:{{.Tag}}" | grep "^Zillaforge/" | grep -v "Zillaforge/golang" | while read image_tag; do
+sudo docker images --format "{{.Repository}}:{{.Tag}}" | grep "^Zillaforge/" | grep -v "Zillaforge/golang" | while read image_tag; do
     repo_name=$(echo "$image_tag" | cut -d'/' -f2 | cut -d':' -f1)
     tag_name=$(echo "$image_tag" | cut -d':' -f2)
     filename="${repo_name}_${tag_name}.tar"
     echo "Saving $image_tag as $filename..."
-    docker save -o "$filename" "$image_tag"
+    sudo docker save -o "$filename" "$image_tag"
     if [[ $? -eq 0 ]]; then
         echo "Successfully saved $image_tag to $filename"
     else
@@ -183,56 +188,56 @@ sudo chmod -R 775 /trusted-cloud
 
 echo "✅ Directories created"
 
-# Add OpenStack users (if OpenStack is available)
-echo "👤 Adding OpenStack users (if available)..."
-if command -v openstack &> /dev/null && [ -f "/etc/kolla/clouds.yaml" ] && [ -f "/home/ubuntu/venv/bin/activate" ]; then
-    echo "🔧 OpenStack detected, adding users..."
+# # Add OpenStack users (if OpenStack is available)
+# echo "👤 Adding OpenStack users (if available)..."
+# if command -v openstack &> /dev/null && [ -f "/etc/kolla/clouds.yaml" ] && [ -f "/home/ubuntu/venv/bin/activate" ]; then
+#     echo "🔧 OpenStack detected, adding users..."
     
-    # Activate OpenStack environment
-    source /home/ubuntu/venv/bin/activate
-    export OS_CLIENT_CONFIG_FILE=/etc/kolla/clouds.yaml
-    export OS_CLOUD=kolla-admin
+#     # Activate OpenStack environment
+#     source /home/ubuntu/venv/bin/activate
+#     export OS_CLIENT_CONFIG_FILE=/etc/kolla/clouds.yaml
+#     export OS_CLOUD=kolla-admin
     
-    # OpenStack user configuration parameters
-    USER_NAME="test@trusted-cloud.nchc.org.tw"
-    PROJECT_NAME="trustedcloud"
-    DOMAIN_NAME="trustedcloud"
-    ROLE_NAME="admin"
+#     # OpenStack user configuration parameters
+#     USER_NAME="test@trusted-cloud.nchc.org.tw"
+#     PROJECT_NAME="trustedcloud"
+#     DOMAIN_NAME="trustedcloud"
+#     ROLE_NAME="admin"
 
-    echo "🔎 Getting User UUID..."
-    USER_ID=$(openstack user list --domain "$DOMAIN_NAME" -f value -c ID -c Name | grep "$USER_NAME" | awk '{print $1}')
+#     echo "🔎 Getting User UUID..."
+#     USER_ID=$(openstack user list --domain "$DOMAIN_NAME" -f value -c ID -c Name | grep "$USER_NAME" | awk '{print $1}')
 
-    if [ -z "$USER_ID" ]; then
-        echo "❌ Cannot find user: $USER_NAME in domain: $DOMAIN_NAME"
-    else
-        echo "✅ User ID: $USER_ID"
+#     if [ -z "$USER_ID" ]; then
+#         echo "❌ Cannot find user: $USER_NAME in domain: $DOMAIN_NAME"
+#     else
+#         echo "✅ User ID: $USER_ID"
 
-        echo "🔎 Getting Project UUID..."
-        PROJECT_ID=$(openstack project list -f value -c ID -c Name | grep "$PROJECT_NAME" | awk '{print $1}')
+#         echo "🔎 Getting Project UUID..."
+#         PROJECT_ID=$(openstack project list -f value -c ID -c Name | grep "$PROJECT_NAME" | awk '{print $1}')
 
-        if [ -z "$PROJECT_ID" ]; then
-            echo "❌ Cannot find project: $PROJECT_NAME"
-        else
-            echo "✅ Project ID: $PROJECT_ID"
+#         if [ -z "$PROJECT_ID" ]; then
+#             echo "❌ Cannot find project: $PROJECT_NAME"
+#         else
+#             echo "✅ Project ID: $PROJECT_ID"
 
-            echo "⚙️ Adding Project Role..."
-            openstack role add --project "$PROJECT_ID" --user "$USER_ID" "$ROLE_NAME" 2>/dev/null || echo "Project role may already exist"
+#             echo "⚙️ Adding Project Role..."
+#             openstack role add --project "$PROJECT_ID" --user "$USER_ID" "$ROLE_NAME" 2>/dev/null || echo "Project role may already exist"
 
-            echo "⚙️ Adding System Role..."
-            openstack role add --user "$USER_ID" --system all "$ROLE_NAME" 2>/dev/null || echo "System role may already exist"
+#             echo "⚙️ Adding System Role..."
+#             openstack role add --user "$USER_ID" --system all "$ROLE_NAME" 2>/dev/null || echo "System role may already exist"
 
-            echo "⚙️ Adding Domain Role..."
-            openstack role add --user "$USER_ID" --domain "$DOMAIN_NAME" "$ROLE_NAME" 2>/dev/null || echo "Domain role may already exist"
+#             echo "⚙️ Adding Domain Role..."
+#             openstack role add --user "$USER_ID" --domain "$DOMAIN_NAME" "$ROLE_NAME" 2>/dev/null || echo "Domain role may already exist"
 
-            echo "🎉 All roles have been successfully added!"
-        fi
-    fi
+#             echo "🎉 All roles have been successfully added!"
+#         fi
+#     fi
     
-    deactivate
-    echo "✅ OpenStack user configuration completed"
-else
-    echo "⚠️ OpenStack not available, skipping user addition"
-fi
+#     deactivate
+#     echo "✅ OpenStack user configuration completed"
+# else
+#     echo "⚠️ OpenStack not available, skipping user addition"
+# fi
 
 echo "=========================================="
 echo "Prerequisites setup completed successfully!"

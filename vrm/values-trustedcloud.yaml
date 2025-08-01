@@ -101,7 +101,7 @@ core:
         master_group_name: mymaster
       - name: opstk
         kind: openstack
-        identity_endpoint: http://192.168.0.200:5000 #openstakc keystone endpoint
+        identity_endpoint: keystone_url #openstakc keystone endpoint
         username: test@trusted-cloud.nchc.org.tw
         password: password123
         domain_name: trustedcloud

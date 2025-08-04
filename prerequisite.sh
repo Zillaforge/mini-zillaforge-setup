@@ -20,27 +20,61 @@ sudo apt install make jq -y
 
 # Install Docker from Official Site
 echo "🐳 Installing Docker..."
+sudo apt-get install -y apt-transport-https ca-certificates curl gnupg
 
-for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt-get remove $pkg; done
+# Install Docker From Docker Official
+curl -Ol https://download.docker.com/linux/ubuntu/dists/jammy/pool/stable/amd64/containerd.io_1.7.25-1_amd64.deb
+curl -Ol https://download.docker.com/linux/ubuntu/dists/jammy/pool/stable/amd64/docker-ce_27.5.1-1~ubuntu.22.04~jammy_amd64.deb
+curl -Ol https://download.docker.com/linux/ubuntu/dists/jammy/pool/stable/amd64/docker-ce-rootless-extras_27.5.1-1~ubuntu.22.04~jammy_amd64.deb
+curl -Ol https://download.docker.com/linux/ubuntu/dists/jammy/pool/stable/amd64/docker-ce-cli_27.5.1-1~ubuntu.22.04~jammy_amd64.deb
 
-# Add Docker's official GPG key:
-sudo apt-get update
-sudo apt-get install ca-certificates curl
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
-
-# Add the repository to Apt sources:
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-  $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt-get update
-
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
+sudo dpkg -i *.deb
+rm *.deb
 sudo usermod -aG docker $USER
-# sudo newgrp docker
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo docker version
+
+sudo mkdir -p /etc/containerd
+sudo containerd config default | sudo tee /etc/containerd/config.toml
+sudo sed -i "s/SystemdCgroup = false/SystemdCgroup = true/g" /etc/containerd/config.toml
+grep SystemdCgroup /etc/containerd/config.toml
+sudo systemctl restart containerd
+
+# change docker cgroup driver to systemd
+cat <<EOF | sudo tee /etc/docker/daemon.json
+{
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "100m"
+  },
+  "storage-driver": "overlay2"
+}
+EOF
+
+sudo mkdir -p /etc/systemd/system/docker.service.d
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+systemctl status --no-pager docker
+
+
+
+# Essential Tweaks
+sudo swapoff -a
+cat << EOF | sudo tee /etc/modules-load.d/k8s.conf
+overlay
+br_netfilter
+EOF
+sudo modprobe overlay
+sudo modprobe br_netfilter
+cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-iptables  = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.ipv4.ip_forward                 = 1
+EOF
+sudo sysctl --system
+sleep 2
 
 echo "✅ Docker installation completed"
 
@@ -176,17 +210,7 @@ else
     echo "⚠️ No tar files found in /tmp - skipping image import"
 fi
 
-# Create required directories
-echo "📁 Creating required directories..."
-sudo mkdir -p /trusted-cloud/normal/services/backup/postgres-backup
-sudo mkdir -p /trusted-cloud/local/postgres-ha/postgres
-sudo mkdir -p /trusted-cloud/local/redis
-sudo mkdir -p /trusted-cloud/normal/site-storage
-sudo mkdir -p /trusted-cloud/normal/storage
-sudo mkdir -p /trusted-cloud/sensitivity/storage
-sudo chmod -R 775 /trusted-cloud
 
-echo "✅ Directories created"
 
 
 echo "=========================================="

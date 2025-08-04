@@ -7,6 +7,19 @@ echo "=========================================="
 echo "Running Zillaforge Installation"
 echo "=========================================="
 
+
+# Create required directories
+echo "📁 Creating required directories..."
+sudo mkdir -p /trusted-cloud/normal/services/backup/postgres-backup
+sudo mkdir -p /trusted-cloud/local/postgres-ha/postgres
+sudo mkdir -p /trusted-cloud/local/redis
+sudo mkdir -p /trusted-cloud/normal/site-storage
+sudo mkdir -p /trusted-cloud/normal/storage
+sudo mkdir -p /trusted-cloud/sensitivity/storage
+sudo chmod -R 775 /trusted-cloud
+
+echo "✅ Directories created"
+
 # Get hostname and IP for configuration
 echo "🔧 Configuring hostname and IP settings..."
 HOSTNAME=$(hostname)

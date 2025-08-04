@@ -7,6 +7,7 @@ This repository contains the setup scripts and Helm charts for deploying a minim
 ```
 mini-zillaforge-setup/
 ├── helm/                           # All Helm charts and configurations
+│   ├── cloud-storage/              # Cloud Storage service chart
 │   ├── ingress/                    # Ingress configurations
 │   ├── ldap/                       # LDAP service chart
 │   ├── mariadb-galera/            # MariaDB Galera cluster chart
@@ -25,57 +26,6 @@ mini-zillaforge-setup/
 └── README.md                      # This file
 ```
 
-## Installation Process
-
-The installation is streamlined into three main phases:
-
-### 1. Prerequisites (`prerequisite.sh`)
-
-**Run as root/sudo** - Installs required tools, builds images, and prepares the environment:
-- System package updates (make, jq)
-- Docker installation and configuration
-- K3s Kubernetes cluster setup
-- Helm installation
-- **Docker image building** (utility images and service repositories)
-- **Image cleanup** (removes base images and dangling images)
-- **Image export** (saves Zillaforge images as tar files)
-- **Image import** (imports tar files into K3s containerd)
-- **OpenStack user setup** (if OpenStack is available)
-- Required directory creation
-
-```bash
-sudo ./prerequisite.sh
-```
-
-**Note:** After running prerequisites, restart your terminal or run `source ~/.bashrc` to ensure environment variables are loaded.
-
-### 2. Installation (`install.sh`)
-
-Installs all Helm charts in the correct order:
-- Databases (MariaDB, PostgreSQL, Redis)
-- Message queue (RabbitMQ)
-- Core services (PegasusIAM, LDAP, Kong API Gateway)
-- **VPS and VRM services** (Virtual Platform Service and Virtual Resource Manager)
-- User interfaces (Admin Portal, User Portal)
-- Ingress configuration
-
-```bash
-./install.sh
-```
-
-### 3. Post-Configuration (`post-configuration.sh`)
-
-Configures OpenStack integration and service interconnections:
-- OpenStack environment setup
-- External network configuration
-- Cirros image deployment to OpenStack
-- **IAM and VRM integration** (API calls and project configuration)
-- Final service configuration
-
-```bash
-./post-configuration.sh
-```
-
 ## Complete Setup
 
 For a complete installation, run all three scripts in sequence:
@@ -83,11 +33,16 @@ For a complete installation, run all three scripts in sequence:
 ```bash
 # 1. Prerequisites (run as root)
 sudo ./prerequisite.sh
-
-# 2. Restart terminal or source bashrc
 source ~/.bashrc
 
+# 2 Setup OpenStack environment
+git clone https://github.com/Zillaforge/openstack-deploy.git
+cd openstack-deploy
+./install.sh
+
+
 # 3. Install services
+cd ../mini-zillaforge-setup
 ./install.sh
 
 # 4. Configure integrations
@@ -108,123 +63,97 @@ This will:
 - Remove service accounts
 - Optionally clean up persistent volumes
 
-## Prerequisites
 
-Before running the installation, ensure you have:
+## Installation Process
 
-1. **Ubuntu 22.04 LTS** (recommended)
-2. **Root access** or sudo privileges for prerequisite.sh
-3. **Internet connectivity** for downloading packages and cloning repositories
-4. **OpenStack environment** (optional, for full integration):
-   - `/home/ubuntu/venv/` with OpenStack CLI tools
-   - `/etc/kolla/clouds.yaml` configuration
-   - `../all-in-one` inventory file for kolla-ansible
+The installation is streamlined into three main phases:
 
-**Note:** The setup process will automatically build all required Docker images, so no pre-built images are needed.
+### 1. Prerequisites (`prerequisite.sh`)
 
-## What Gets Built and Installed
+- **System Preparation:**
+  - Updates system packages using `apt update`.
+  - Installs essential tools like `make` and `jq`.
 
-### Docker Images Built:
-- **Utility Images**: debugger, golang
-- **Service Images**: 
-  - ldapservice
-  - pegasusiam  
-  - virtualregistrymanagement
-  - virtualplatformservice
-  - cloudstorage
-  - kongauthplugin
-  - eventpublishplugin
-  - kongresponsetransformerplugin
-  - adminpanel
-  - userportal
+- **Containerization & Orchestration Setup:**
+  - **Docker:** Installs the latest version of Docker Engine and adds the current user to the `docker` group.
+  - **K3s:** Installs a lightweight Kubernetes distribution (K3s) and configures `kubectl` access by setting the `KUBECONFIG` environment variable in `~/.bashrc`.
+  - **Helm:** Installs the Helm package manager for Kubernetes.
 
-### Services Installed:
-- **Databases**: MariaDB Galera, PostgreSQL, Redis Sentinel
-- **Message Queue**: RabbitMQ
-- **Core Services**: PegasusIAM, LDAP, Kong API Gateway
-- **Platform Services**: VPS (Virtual Platform Service), VRM (Virtual Resource Manager)  
-- **User Interfaces**: Admin Portal, User Portal
-- **Networking**: Ingress controllers and routing
+- **Image Build and Management:**
+  - **Builds Utility Images:** Clones the `utility-image-builder` repository to build necessary utility images:
+    - `debugger` image is used for debugging purposes.
+    - `golang` image is used for building Go applications.
+  - **Builds Service Images:** Clones and builds all required Zillaforge service images, including:
+    - `ldapservice`
+    - `pegasusiam`
+    - `virtualregistrymanagement`
+    - `virtualplatformservice`
+    - `cloudstorage`
+    - `kongauthplugin`
+    - `eventpublishplugin`
+    - `kongresponsetransformerplugin`
+    - `adminpanel`
+    - `userportal`
+  - **Image Import to K3s:**
+    - Exports all newly built `Zillaforge/*` images to `.tar` archives.
+    - Imports these archives directly into the K3s containerd image registry, making them available to the cluster without needing a separate Docker registry.
 
-## Access URLs
+- **Directory Setup:**
+  - Creates the `/trusted-cloud` directory structure required for persistent volume storage for services like PostgreSQL, Redis, and other stateful applications.
 
-After successful installation, access the services at:
+**Note:** After running prerequisites, restart your terminal or run `source ~/.bashrc` to ensure environment variables like `KUBECONFIG` are loaded correctly.
 
-- **Admin Portal**: `http://admin.<your-ip>.nip.io`
-- **User Portal**: `http://user.<your-ip>.nip.io`  
-- **Kong API Gateway**: `http://kong.<your-ip>.nip.io`
+### 2. Installation (`install.sh`)
 
-Replace `<your-ip>` with your actual public IP address (automatically detected during installation).
+This script automates the deployment of all Zillaforge services onto the prepared Kubernetes cluster using Helm. It follows a specific, ordered installation process to ensure dependencies are met.
 
-## Troubleshooting
 
-### Common Issues
+- **Dynamic Configuration:**
+  - Automatically detects the machine's public IP address and hostname.
+  - Uses `sed` to dynamically update Helm values files (`values-*.yaml`) and ingress configurations, ensuring all services and access points are correctly configured for the current environment.
 
-1. **Permission denied**: Ensure prerequisite.sh is run with sudo
-2. **Build failures**: Check internet connectivity and GitHub repository access
-3. **K3s not ready**: Wait a few minutes after prerequisite installation for K3s to initialize
-4. **Helm chart failures**: Check if all images are available: `kubectl get pods -A`
-5. **OpenStack integration**: Ensure OpenStack environment is properly configured
+- **Core Service Installation:**
+    The script installs services in the following logical order:
+  - **Databases:** Deploys `MariaDB Galera`, `PostgreSQL`, `RabbitMQ`, and `Redis Sentinel` to provide the foundational data stores.
+  - **Core Services:** Deploys `PegasusIAM`, `LDAP`, and the `System Kong` API Gateway.
+  - **Web Portals:** Installs the `Admin Portal` and `User Portal`.
+  - **Ingress Rules:** Applies Kubernetes Ingress rules to expose the services to the outside world.
 
-### Debugging Commands
+- **OpenStack Integration:**
+    - **User Setup:** Assigns the necessary roles (`admin`) to the default LDAP user within the OpenStack project.
 
-```bash
-# Check pod status
-kubectl get pods -A
+- **Platform Services Installation:**
+    - Deploys the `Virtual Resource Manager (VRM)` and `Virtual Platform Service (VPS)`.
+    - Deploys the `Cloud Storage (CS)` service, creating two instances: one for public access and one for internal site storage.
 
-# View pod logs  
-kubectl logs <pod-name> -n <namespace>
 
-# Check Helm releases
-helm list -A
+### 3. Post-Configuration (`post-configuration.sh`)
 
-# View recent events
-kubectl get events --sort-by=.metadata.creationTimestamp
+This final script completes the setup by deeply integrating the deployed services with the OpenStack backend and performing necessary final adjustments.
 
-# Check Docker images
-docker images | grep Zillaforge
 
-# Check imported images in K3s
-sudo ctr --address /run/k3s/containerd/containerd.sock -n k8s.io images ls
-```
+- **OpenStack Environment Finalization:**
+    - **VNC Console Access:** Updates the Kolla Ansible configuration (`globals.yml`) to enable VNC consoles access.
+    - **Networking:** Creates a default external network (`ExNet`) and subnet in OpenStack, which is required for virtual machines to get public connectivity.
+    - **Test Image Setup:** Downloads a standard Cirros cloud image, uploads it to OpenStack's image service (Glance), and tags it for use.
 
-### Clean Installation
+- **Kong API Gateway Reload:**
+    - Imports the latest service routes and configurations from a local `kong.yaml` file into the Kong database.
+    - Restarts the Kong deployment to ensure all new configurations are loaded and active.
 
-For a completely fresh installation:
+- **User Portal Configuration:**
+    - Removes the `Content-Security-Policy` header from the User Portal's Nginx configuration. This is often done to prevent issues with embedding or cross-origin content in specific deployment scenarios.
 
-1. **Uninstall services**: `./uninstall.sh`
-2. **Remove persistent data**: `sudo rm -rf /trusted-cloud`
-3. **Remove Docker images**: `docker system prune -a`
-4. **Uninstall K3s**: `/usr/local/bin/k3s-uninstall.sh`
-5. **Clean start**: Run the installation process again
+- **IAM and VRM Service Integration:**
+    This is the most critical part of the script, where the abstract Zillaforge services are linked to the concrete OpenStack resources.
+    - **Fetches an Admin Token:** Authenticates with the PegasusIAM API to get an administrative token for performing privileged actions.
+    - **Links Projects:** Associates the default Zillaforge project with the `trustedcloud` project in OpenStack by updating its metadata with the OpenStack project's UUID.
+    - **Imports Image to VRM:** Makes an API call to the Virtual Resource Manager (VRM) to import the Cirros image from OpenStack. This makes the image visible and usable within the Zillaforge platform, linking the VRM's catalog to OpenStack's image repository.
 
-## Advanced Configuration
+After these steps, the script prints the final access URLs and default credentials, and the system is ready for use.
 
-### OpenStack Integration
-The setup automatically detects and integrates with OpenStack if available. If you don't have OpenStack, the system will work with reduced functionality.
 
-### Custom Configuration
-Configuration files are located in the `helm/` directory. You can customize values before installation:
-- Database configurations in `helm/mariadb-galera/`, `helm/postgresql/`, `helm/redis-sentinel/`
-- Service configurations in respective service directories
-- Ingress rules in `helm/ingress/`
 
-### Resource Requirements
-Minimum recommended resources:
-- **CPU**: 8 cores
-- **RAM**: 16GB  
-- **Storage**: 100GB available space
-- **Network**: Stable internet connection for image building
 
-## Migration from Legacy Setup
 
-If migrating from the old setup process:
 
-1. **Remove old files**: The following files are no longer used:
-   - `build_images.sh` (integrated into `prerequisite.sh`)
-   - `addopuser.sh` (integrated into `prerequisite.sh`)
-   - `config.sh` and `config2.sh` (functionality distributed across scripts)
-
-2. **Updated process**: Use the new 3-step process instead of the old multi-script approach
-
-3. **Simplified workflow**: Everything is now contained in three main scripts with clear separation of concerns

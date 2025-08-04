@@ -165,7 +165,7 @@ if command -v openstack &> /dev/null && [ -f "/etc/kolla/clouds.yaml" ]; then
     export OS_CLOUD=kolla-admin
     
     # Get keystone URL for VPS and VRM configuration
-    KEYSTONE_URL=$(openstack endpoint list --service identity --interface public -f value -c URL 2>/dev/null || echo "http://localhost:5000/v3")
+    KEYSTONE_URL=$(openstack endpoint list --service identity --interface public -f value -c URL)
     echo "Keystone URL: $KEYSTONE_URL"
     
     # Update VPS configuration

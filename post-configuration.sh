@@ -21,10 +21,6 @@ source /home/ubuntu/venv/bin/activate
 export OS_CLIENT_CONFIG_FILE=/etc/kolla/clouds.yaml
 export OS_CLOUD=kolla-admin
 
-# Get keystone URL for VPS and VRM configuration
-KEYSTONE_URL=$(openstack endpoint list --service identity --interface public -f value -c URL)
-echo "Keystone URL: $KEYSTONE_URL"
-
 # Update kolla external FQDN for novnc external access
 echo "🔄 Updating kolla external FQDN..."
 sed -i "s/^#\?kolla_external_fqdn: .*/kolla_external_fqdn: \"${HOSTIP_DASH}.nip.io\"/" /etc/kolla/globals.yml
@@ -72,12 +68,56 @@ echo "OpenStack Image ID: $OP_IMAGE_ID"
 
 deactivate
 
+
+#更新kong用的資料庫
+kong_pod=$(kubectl get pod | grep public-system-kong | awk '{print $1}' | head -n 1)
+
+kubectl exec -it "$kong_pod" -c system-kong -- sh -c "
+  cd /etc/kong && \
+  kong config db_import kong.yaml
+"
+helm delete systemkong
+helm install systemkong ./helm/system-kong -f ./helm/system-kong/values-public.yaml
+
+
+#網址限制
+POD=$(kubectl get pod | grep user-portal-public-deployment | awk '{print $1}' | head -n 1)
+kubectl exec -it "$POD" -c user-portal-public -- sh -c "sed -i '/Content-Security-Policy/d' /etc/nginx/nginx.conf && nginx -s reload"
+
+
+echo "waiting for KONG deployments to be ready..."
+kubectl wait --for=condition=available deployment/public-system-kong --timeout=1200s
+
+
 # Configure IAM and VRM integration
 echo "🔗 Configuring IAM and VRM integration..."
 
+
+# Wait for IAM API to be ready (HTTP 200), with binary backoff, max 5 tries
+echo $HOSTIP_DASH
+IAM_API_URL="http://kong.$HOSTIP_DASH.nip.io/iam/api/v1/version"
+max_retries=5
+wait_time=1
+retry=0
+while [ $retry -lt $max_retries ]; do
+  status=$(curl -s -o /dev/null -w "%{http_code}" "$IAM_API_URL")
+  if [ "$status" = "200" ]; then
+    echo "IAM API is ready (HTTP 200)"
+    break
+  fi
+  retry=$((retry+1))
+  if [ $retry -eq $max_retries ]; then
+    echo "❌ IAM API not ready after $max_retries attempts. Exiting."
+    exit 1
+  fi
+  echo "IAM API not ready (status: $status), retry $retry/$max_retries, waiting $wait_time seconds..."
+  sleep $wait_time
+  wait_time=$((wait_time*2))
+done
+
 # Get IAM token
 TOKEN=$(curl -s --request POST \
-  --url http://127.0.0.1:31084/iam/api/v1/admin/login \
+  --url http://kong.$HOSTIP_DASH.nip.io/iam/api/v1/admin/login \
   --header 'Content-Type: application/json' \
   --header 'User-Agent: insomnia/11.2.0' \
   --data '{
@@ -88,8 +128,8 @@ TOKEN=$(curl -s --request POST \
 echo "IAM Token obtained"
 
 # Get IAM project UUID and user ID
-IAM_PROJECT_UUID=$(curl -X GET "http://127.0.0.1:31084/iam/api/v1/admin/user?limit=20" -H "accept: application/json" -H "Authorization: Bearer $TOKEN" | jq -r '.permission.projectId')
-USER_ID=$(curl -X GET "http://127.0.0.1:31084/iam/api/v1/admin/user?limit=20" -H "accept: application/json" -H "Authorization: Bearer $TOKEN" | jq -r '.userId')
+IAM_PROJECT_UUID=$(curl -X GET "http://kong.$HOSTIP_DASH.nip.io/iam/api/v1/admin/user?limit=20" -H "accept: application/json" -H "Authorization: Bearer $TOKEN" | jq -r '.permission.projectId')
+USER_ID=$(curl -X GET "http://kong.$HOSTIP_DASH.nip.io/iam/api/v1/admin/user?limit=20" -H "accept: application/json" -H "Authorization: Bearer $TOKEN" | jq -r '.userId')
 
 echo "IAM Project UUID: $IAM_PROJECT_UUID"
 echo "User ID: $USER_ID"
@@ -149,7 +189,9 @@ echo "Post-Configuration completed successfully!"
 echo "System is now ready for use!"
 echo ""
 echo "Access URLs:"
-echo "- Admin Portal: http://admin.$HOSTIP_DASH.nip.io"
-echo "- User Portal: http://user.$HOSTIP_DASH.nip.io"
+echo "- User Portal : http://www.$HOSTIP_DASH.nip.io"
 echo "- Kong Gateway: http://kong.$HOSTIP_DASH.nip.io"
+echo ""
+echo "Account & Password:"
+echo "admin@ci.asus.com / admin"
 echo "=========================================="

@@ -1,0 +1,41 @@
+{{- if .Values.jobScheduler.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app }}-jobscheduler-deployment
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.app }}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app }}
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+    spec:
+      containers:
+      - name: {{ .Values.app }}-jobscheduler
+        image: {{ .Values.images.cloudstorage }}
+        imagePullPolicy: IfNotPresent
+        command: ["./CloudStorage", "--global-config", "/etc/ASUS/cloud-storage-global.yaml", "--job-scheduler-config", "/etc/ASUS/job-scheduler.yaml", "job-scheduler","serve"]
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/ASUS
+        - name: log-volume
+          mountPath: /var/log/ASUS
+      - name: debugger
+        image: {{ .Values.images.debugger }}
+        volumeMounts:
+        - name: log-volume
+          mountPath: /var/log/ASUS
+      volumes:
+      - name: config-volume
+        configMap:
+          name: {{ .Values.app }}-config
+      - name: log-volume
+        emptyDir: {}
+
+{{- end }}

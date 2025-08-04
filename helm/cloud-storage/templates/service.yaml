@@ -1,0 +1,30 @@
+{{- if .Values.core.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.app }}-service
+spec:
+  {{- if eq .Values.service.core.enableNodePort true }}
+  type: NodePort
+  {{- end }}
+  {{- if .Values.service.core.externalIPs }}
+  externalIPs: {{ .Values.service.core.externalIPs }}
+  {{- end }}
+  selector:
+    app: {{ .Values.app }}-core-deployment
+  ports:
+    - name: grpc-port
+      port: {{ .Values.service.core.grpc.port }}
+      targetPort: {{ .Values.service.core.grpc.port }}
+      {{- if eq .Values.service.core.enableNodePort true }}
+      nodePort: {{ .Values.service.core.grpc.nodePort }}
+      {{- end }}
+      protocol: TCP
+    - name: http-port
+      port: {{ .Values.service.core.http.port }}
+      targetPort: {{ .Values.service.core.http.port }}
+      {{- if eq .Values.service.core.enableNodePort true }}
+      nodePort: {{ .Values.service.core.http.nodePort }}
+      {{- end }}
+      protocol: TCP
+{{- end }}

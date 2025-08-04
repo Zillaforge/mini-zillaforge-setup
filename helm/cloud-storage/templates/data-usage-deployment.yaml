@@ -1,0 +1,57 @@
+{{- if .Values.dataUsage.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app }}-datausage-deployment
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.app }}-datausage-deployment
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app }}-datausage-deployment
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+    spec:
+      automountServiceAccountToken: true
+      containers:
+      - name: {{ .Values.app }}-datausage
+        image: {{ .Values.images.cloudstorage }}
+        imagePullPolicy: IfNotPresent
+        command: ["./CloudStorage", "--global-config", "/etc/ASUS/data-usage-global.yaml", "data-usage", "serve"]
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/ASUS
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        - name: shared-data ###
+          mountPath: /tmp/data
+        - name: data-volume
+          mountPath: {{ .Values.core.configmap.filesystem.local.path }}
+      {{- if .Values.images.debugger }}
+      - name: debugger
+        image: {{ .Values.images.debugger }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/ASUS
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        - name: shared-data ###
+          mountPath: /tmp/data
+        - name: data-volume
+          mountPath: {{ .Values.core.configmap.filesystem.local.path }}
+      {{- end }}
+      volumes:
+      - name: config-volume
+        configMap:
+          name: {{ .Values.app }}-config
+      - name: log-volume
+        emptyDir: {}
+      - name: shared-data ###
+        emptyDir: {}
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: {{ .Values.app }}-pvc
+{{- end }}

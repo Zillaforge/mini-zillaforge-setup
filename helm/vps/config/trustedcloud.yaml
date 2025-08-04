@@ -85,7 +85,7 @@ services:
     sentinel_password: ""
     master_group_name: mymaster
 openstack:
-  auth_url: "http://192.168.0.200:5000" #!!!!!!openstack
+  auth_url: "keystone_url" #!!!!!!openstack
   domain: "trustedcloud"
   admin_project: "trustedcloud"
   admin: "test@trusted-cloud.nchc.org.tw"

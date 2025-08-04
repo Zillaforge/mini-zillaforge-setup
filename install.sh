@@ -30,6 +30,9 @@ sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/ingress/www.yaml
 sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/ingress/user.yaml
 sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/portal/values-user-portal-public.yaml
 sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/portal/values-admin-panel-public.yaml
+sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/ingress/ssscloudstorage.yaml
+sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/ingress/cloudstorage.yaml
+sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/cloud-storage/values-dss-public.yaml
 
 echo "✅ Configuration files updated"
 
@@ -198,6 +201,23 @@ kubectl wait --for=condition=available deployment/vps-server --timeout=1200s
 
 
 echo "✅ VRM and VPS installed"
+
+
+#cloud-storage
+helm install cloudstorage ./helm/cloud-storage/ -f ./helm/cloud-storage/values-dss-public.yaml
+
+site-cloud-storage
+helm install sss          ./helm/cloud-storage/ -f ./helm/cloud-storage/values-site-storage.yaml
+
+
+echo "waiting for CS-public deployments to be ready..."
+kubectl wait --for=condition=available deployment/data-storage-service-public-core-deployment --timeout=1200s
+
+echo "waiting for CS-system deployments to be ready..."
+kubectl wait --for=condition=available deployment/site-storage-service-core-deployment --timeout=1200s
+
+echo "✅ CS installed"
+
 
 echo "=========================================="
 echo "Zillaforge Installation completed successfully!"

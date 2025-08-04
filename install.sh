@@ -206,7 +206,7 @@ echo "✅ VRM and VPS installed"
 #cloud-storage
 helm install cloudstorage ./helm/cloud-storage/ -f ./helm/cloud-storage/values-dss-public.yaml
 
-site-cloud-storage
+#site-cloud-storage
 helm install sss          ./helm/cloud-storage/ -f ./helm/cloud-storage/values-site-storage.yaml
 
 

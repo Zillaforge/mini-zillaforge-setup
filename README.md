@@ -31,21 +31,21 @@ mini-zillaforge-setup/
 For a complete installation, run all three scripts in sequence:
 
 ```bash
+# Clone the repository, and initialize submodules
+git clone https://github.com/Zillaforge/mini-zillaforge-setup.git
+cd mini-zillaforge-setup
+git submodule update --init --recursive
+
+
 # 1. Prerequisites (run as root)
 sudo ./prerequisite.sh
 source ~/.bashrc
 
-# 2 Setup OpenStack environment
-git clone https://github.com/Zillaforge/openstack-deploy.git
-cd openstack-deploy
+
+# 2. Install services
 ./install.sh
 
-
-# 3. Install services
-cd ../mini-zillaforge-setup
-./install.sh
-
-# 4. Configure integrations
+# 3. Configure integrations
 ./post-configuration.sh
 ```
 

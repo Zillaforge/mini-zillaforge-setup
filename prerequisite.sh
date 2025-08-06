@@ -7,6 +7,8 @@ echo "=========================================="
 echo "Running Prerequisites Setup"
 echo "=========================================="
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 
 # Update system packages
 echo "📦 Updating system packages..."
@@ -212,6 +214,9 @@ fi
 
 
 echo "🔧 Install OpenStack from openstack-deploy submodule..."
+# Go back to the script directory
+cd "$SCRIPT_DIR"
+
 # Run install.sh inside openstack-deploy submodule folder if it exists
 if [ -d "./openstack-deploy" ] && [ -f "./openstack-deploy/install.sh" ]; then
     echo "🚀 Running install.sh in openstack-deploy submodule..."
@@ -219,6 +224,10 @@ if [ -d "./openstack-deploy" ] && [ -f "./openstack-deploy/install.sh" ]; then
     echo "✅ openstack-deploy install.sh completed"
 else
     echo "⚠️ openstack-deploy submodule or install.sh not found, skipping."
+    echo "Contents of current directory:"
+    ls -la
+    echo "Please run 'git submodule update --init --recursive' to initialize submodules."
+    echo "To install OpenStack, run 'cd openstack-deploy && bash install.sh' manually."
 fi
 
 echo "=========================================="

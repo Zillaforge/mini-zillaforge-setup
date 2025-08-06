@@ -22,9 +22,9 @@ export OS_CLIENT_CONFIG_FILE=/etc/kolla/clouds.yaml
 export OS_CLOUD=kolla-admin
 
 # Update kolla external FQDN for novnc external access
-echo "🔄 Updating kolla external FQDN..."
-sed -i "s/^#\?kolla_external_fqdn: .*/kolla_external_fqdn: \"${HOSTIP_DASH}.nip.io\"/" /etc/kolla/globals.yml
-kolla-ansible reconfig -i ../all-in-one --tags nova
+#echo "🔄 Updating kolla external FQDN..."
+#sed -i "s/^#\?kolla_external_fqdn: .*/kolla_external_fqdn: \"${HOSTIP_DASH}.nip.io\"/" /etc/kolla/globals.yml
+#kolla-ansible reconfig -i ../all-in-one --tags nova
 
 # Create external network (may not always work depending on environment)
 echo "🌐 Creating external network..."

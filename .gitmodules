@@ -1,0 +1,4 @@
+[submodule "openstack-deploy"]
+	path = openstack-deploy
+	url = https://github.com/Zillaforge/openstack-deploy.git
+	branch = jimmy

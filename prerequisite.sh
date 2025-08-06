@@ -211,7 +211,15 @@ else
 fi
 
 
-
+echo "🔧 Install OpenStack from openstack-deploy submodule..."
+# Run install.sh inside openstack-deploy submodule folder if it exists
+if [ -d "./openstack-deploy" ] && [ -f "./openstack-deploy/install.sh" ]; then
+    echo "🚀 Running install.sh in openstack-deploy submodule..."
+    (cd ./openstack-deploy && bash install.sh)
+    echo "✅ openstack-deploy install.sh completed"
+else
+    echo "⚠️ openstack-deploy submodule or install.sh not found, skipping."
+fi
 
 echo "=========================================="
 echo "Prerequisites setup completed successfully!"

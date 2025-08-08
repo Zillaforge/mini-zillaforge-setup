@@ -46,25 +46,25 @@ openstack subnet create ExSubnet \
 set -e  # Re-enable exit on error
 
 # Download and add Cirros image to OpenStack
-echo "📥 Adding Cirros image to OpenStack..."
-if [ ! -f "cirros-0.6.2-x86_64-disk.img" ]; then
-    wget http://download.cirros-cloud.net/0.6.2/cirros-0.6.2-x86_64-disk.img
-fi
+# echo "📥 Adding Cirros image to OpenStack..."
+# if [ ! -f "cirros-0.6.2-x86_64-disk.img" ]; then
+#     wget http://download.cirros-cloud.net/0.6.2/cirros-0.6.2-x86_64-disk.img
+# fi
 
-openstack image create "cirros-0.6.2" \
-  --file cirros-0.6.2-x86_64-disk.img \
-  --disk-format qcow2 \
-  --container-format bare \
-  --public
+# openstack image create "cirros-0.6.2" \
+#   --file cirros-0.6.2-x86_64-disk.img \
+#   --disk-format qcow2 \
+#   --container-format bare \
+#   --public
 
-openstack image set --property defaultUser=user --property distribution=cirros cirros-0.6.2
+# openstack image set --property defaultUser=user --property distribution=cirros cirros-0.6.2
 
 # Get OpenStack project and image IDs for service configuration
 OP_PROJECT_UUID=$(openstack project show trustedcloud -c id -f value)
-OP_IMAGE_ID=$(openstack image show cirros-0.6.2 -c id -f value)
+# OP_IMAGE_ID=$(openstack image show cirros-0.6.2 -c id -f value)
 
 echo "OpenStack Project UUID: $OP_PROJECT_UUID"
-echo "OpenStack Image ID: $OP_IMAGE_ID"
+# echo "OpenStack Image ID: $OP_IMAGE_ID"
 
 deactivate
 
@@ -146,6 +146,8 @@ curl --request PUT \
     }
 }'
 
+echo ""
+
 # Update project configuration
 curl -X 'PUT' \
   "http://kong.$HOSTIP_DASH.nip.io/iam/api/v1/admin/project/$IAM_PROJECT_UUID" \
@@ -167,21 +169,22 @@ curl -X 'PUT' \
 EOF
 
 # Import Cirros image to VRM
-curl -X 'POST' \
-  "http://kong.$HOSTIP_DASH.nip.io/vrm/api/v1/admin/import" \
-  -H 'accept: application/json' \
-  -H "Authorization: Bearer $TOKEN" \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "imageId": "'"$OP_IMAGE_ID"'",
-  "creator": "4990ccdb-a9b1-49e5-91df-67c921601d82",
-  "name": "cirros",
-  "version": "0.6.2",
-  "operatingSystem": "linux",
-  "projectId": "'"$IAM_PROJECT_UUID"'",
-  "namespace": "public"
-}'
+# curl -X 'POST' \
+#   "http://kong.$HOSTIP_DASH.nip.io/vrm/api/v1/admin/import" \
+#   -H 'accept: application/json' \
+#   -H "Authorization: Bearer $TOKEN" \
+#   -H 'Content-Type: application/json' \
+#   -d '{
+#   "imageId": "'"$OP_IMAGE_ID"'",
+#   "creator": "4990ccdb-a9b1-49e5-91df-67c921601d82",
+#   "name": "cirros",
+#   "version": "0.6.2",
+#   "operatingSystem": "linux",
+#   "projectId": "'"$IAM_PROJECT_UUID"'",
+#   "namespace": "public"
+# }'
 
+echo ""
 echo "✅ IAM and VRM integration configured"
 
 echo "=========================================="
@@ -194,4 +197,7 @@ echo "- Kong Gateway: http://kong.$HOSTIP_DASH.nip.io"
 echo ""
 echo "Account & Password:"
 echo "admin@ci.asus.com / admin"
+echo ""
+echo "Download Cirros image: http://download.cirros-cloud.net/0.6.2/cirros-0.6.2-x86_64-disk.img"
+echo "Upload image using VRM"
 echo "=========================================="

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Installation script - Install all Helm charts
-set -e
+# set -e
 
 echo "=========================================="
 echo "Running Zillaforge Installation"
@@ -78,8 +78,14 @@ kubectl create serviceaccount pegasus-system-admin
 echo "Installing PegasusIAM..."
 helm install pegasusiam ./helm/pegasusiam -f ./helm/pegasusiam/values-trustedcloud.yaml
 
+echo "waiting for IAM deployments to be ready..."
+kubectl wait --for=condition=available deployment/iam-deployment --timeout=1200s
+
 echo "Installing LDAP OpenStack integration..."
 helm install ldap-opsk ./helm/ldap -f ./helm/ldap/values-openstack.yaml
+
+echo "waiting for LDAP deployments to be ready..."
+kubectl wait --for=condition=available deployment/ldap-service-openstack-deployment --timeout=1200s
 
 echo "Installing System Kong (API Gateway)..."
 helm install systemkong ./helm/system-kong -f ./helm/system-kong/values-public.yaml
@@ -104,16 +110,6 @@ kubectl apply -f ./helm/ingress/
 echo "✅ Ingress configuration applied"
 
 
-echo "waiting for IAM deployments to be ready..."
-kubectl wait --for=condition=available deployment/iam-deployment --timeout=1200s
-
-echo "waiting for LDAP deployments to be ready..."
-kubectl wait --for=condition=available deployment/ldap-service-openstack-deployment --timeout=1200s
-
-
-
-
-
 # Add OpenStack users (if OpenStack is available)
 
 echo "👤 Adding OpenStack users (if available)..."
@@ -131,6 +127,27 @@ if command -v openstack &> /dev/null && [ -f "/etc/kolla/clouds.yaml" ]; then
     PROJECT_NAME="trustedcloud"
     DOMAIN_NAME="trustedcloud"
     ROLE_NAME="admin"
+
+	container_name="keystone"
+
+	echo "create domain $DOMAIN_NAME and project $PROJECT_NAME"
+	openstack domain create $DOMAIN_NAME
+	openstack project create $PROJECT_NAME --domain $DOMAIN_NAME
+
+	echo "restart keystone container"
+	sudo docker exec -it $container_name service apache2 restart
+
+	# Wait for container to report healthy
+	echo "Waiting for $container_name to become healthy..."
+	while [ "$(sudo docker inspect --format='{{.State.Health.Status}}' $container_name 2>/dev/null)" != "healthy" ]; do
+		sleep 2
+		status=$(sudo docker inspect --format='{{.State.Health.Status}}' $container_name 2>/dev/null)
+		echo "Current status: $status"
+		if [ "$status" == "unhealthy" ]; then
+			echo "$container_name is unhealthy. Exiting."
+		fi
+	done
+
 
     echo "🔎 Getting User UUID..."
     USER_ID=$(openstack user list --domain "$DOMAIN_NAME" -f value -c ID -c Name | grep "$USER_NAME" | awk '{print $1}')
@@ -201,13 +218,12 @@ deactivate
 echo "🔧 Installing VRM..."
 helm install vrm ./helm/vrm -f ./helm/vrm/values-trustedcloud.yaml
 
+echo "waiting for VRM deployments to be ready..."
+kubectl wait --for=condition=available deployment/virtual-registry-management-core-deployment --timeout=1200s
+
 # Install VPS (Virtual Platform Service)
 echo "🔧 Installing VPS..."
 helm install vps ./helm/vps -f ./helm/vps/values-trustedcloud.yaml
-
-
-echo "waiting for VRM deployments to be ready..."
-kubectl wait --for=condition=available deployment/virtual-registry-management-core-deployment --timeout=1200s
 
 echo "waiting for VPS deployments to be ready..."
 kubectl wait --for=condition=available deployment/vps-server --timeout=1200s

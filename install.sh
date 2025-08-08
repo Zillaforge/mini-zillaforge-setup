@@ -7,7 +7,6 @@ echo "=========================================="
 echo "Running Zillaforge Installation"
 echo "=========================================="
 
-
 # Create required directories
 echo "📁 Creating required directories..."
 sudo mkdir -p /trusted-cloud/normal/services/backup/postgres-backup
@@ -55,7 +54,6 @@ helm install rabbitmq oci://registry-1.docker.io/bitnamicharts/rabbitmq -f ./hel
 
 echo "✅ RabbitMQ installed"
 
-
 # Install databases
 echo "🗄️ Installing databases..."
 
@@ -72,7 +70,6 @@ echo "waiting for MariaDB Galera statefulset to be ready..."
 kubectl rollout status statefulset/mariadb-galera
 
 echo "✅ Databases installed"
-
 
 # Install core services
 echo "🔐 Installing core services..."
@@ -114,24 +111,23 @@ kubectl apply -f ./helm/ingress/
 
 echo "✅ Ingress configuration applied"
 
-
 # Add OpenStack users (if OpenStack is available)
 
 echo "👤 Adding OpenStack users (if available)..."
 source /home/ubuntu/venv/bin/activate
 
-if command -v openstack &> /dev/null && [ -f "/etc/kolla/clouds.yaml" ]; then
-    echo "🔧 OpenStack detected, adding users..."
-    
-    # Activate OpenStack environment
-    export OS_CLIENT_CONFIG_FILE=/etc/kolla/clouds.yaml
-    export OS_CLOUD=kolla-admin
-    
-    # OpenStack user configuration parameters
-    USER_NAME="test@trusted-cloud.nchc.org.tw"
-    PROJECT_NAME="trustedcloud"
-    DOMAIN_NAME="trustedcloud"
-    ROLE_NAME="admin"
+if command -v openstack &>/dev/null && [ -f "/etc/kolla/clouds.yaml" ]; then
+	echo "🔧 OpenStack detected, adding users..."
+
+	# Activate OpenStack environment
+	export OS_CLIENT_CONFIG_FILE=/etc/kolla/clouds.yaml
+	export OS_CLOUD=kolla-admin
+
+	# OpenStack user configuration parameters
+	USER_NAME="test@trusted-cloud.nchc.org.tw"
+	PROJECT_NAME="trustedcloud"
+	DOMAIN_NAME="trustedcloud"
+	ROLE_NAME="admin"
 
 	container_name="keystone"
 
@@ -153,71 +149,65 @@ if command -v openstack &> /dev/null && [ -f "/etc/kolla/clouds.yaml" ]; then
 		fi
 	done
 
+	echo "🔎 Getting User UUID..."
+	USER_ID=$(openstack user list --domain "$DOMAIN_NAME" -f value -c ID -c Name | grep "$USER_NAME" | awk '{print $1}')
 
-    echo "🔎 Getting User UUID..."
-    USER_ID=$(openstack user list --domain "$DOMAIN_NAME" -f value -c ID -c Name | grep "$USER_NAME" | awk '{print $1}')
+	if [ -z "$USER_ID" ]; then
+		echo "❌ Cannot find user: $USER_NAME in domain: $DOMAIN_NAME"
+	else
+		echo "✅ User ID: $USER_ID"
 
-    if [ -z "$USER_ID" ]; then
-        echo "❌ Cannot find user: $USER_NAME in domain: $DOMAIN_NAME"
-    else
-        echo "✅ User ID: $USER_ID"
+		echo "🔎 Getting Project UUID..."
+		PROJECT_ID=$(openstack project list -f value -c ID -c Name | grep "$PROJECT_NAME" | awk '{print $1}')
 
-        echo "🔎 Getting Project UUID..."
-        PROJECT_ID=$(openstack project list -f value -c ID -c Name | grep "$PROJECT_NAME" | awk '{print $1}')
+		if [ -z "$PROJECT_ID" ]; then
+			echo "❌ Cannot find project: $PROJECT_NAME"
+		else
+			echo "✅ Project ID: $PROJECT_ID"
 
-        if [ -z "$PROJECT_ID" ]; then
-            echo "❌ Cannot find project: $PROJECT_NAME"
-        else
-            echo "✅ Project ID: $PROJECT_ID"
+			echo "⚙️ Adding Project Role..."
+			openstack role add --user "$USER_ID" --project "$PROJECT_ID" "$ROLE_NAME" 2>/dev/null || echo "Project role may already exist"
 
-            echo "⚙️ Adding Project Role..."
-            openstack role add --project "$PROJECT_ID" --user "$USER_ID" "$ROLE_NAME" 2>/dev/null || echo "Project role may already exist"
+			echo "⚙️ Adding Domain Role..."
+			openstack role add --user "$USER_ID" --domain "$DOMAIN_NAME" "$ROLE_NAME" 2>/dev/null || echo "Domain role may already exist"
 
-            echo "⚙️ Adding System Role..."
-            openstack role add --user "$USER_ID" --system all "$ROLE_NAME" 2>/dev/null || echo "System role may already exist"
+			echo "🎉 All roles have been successfully added!"
+		fi
+	fi
 
-            echo "⚙️ Adding Domain Role..."
-            openstack role add --user "$USER_ID" --domain "$DOMAIN_NAME" "$ROLE_NAME" 2>/dev/null || echo "Domain role may already exist"
-
-            echo "🎉 All roles have been successfully added!"
-        fi
-    fi
-    
-    echo "✅ OpenStack user configuration completed"
+	echo "✅ OpenStack user configuration completed"
 else
-    echo "⚠️ OpenStack not available, EXIT"
-    exit 1
+	echo "⚠️ OpenStack not available, EXIT"
+	exit 1
 fi
 
 deactivate
-
 
 # Configure and install VPS and VRM services
 echo "⚙️ Configuring VPS and VRM services..."
 
 source /home/ubuntu/venv/bin/activate
 # Check if OpenStack is available and get keystone URL
-if command -v openstack &> /dev/null && [ -f "/etc/kolla/clouds.yaml" ]; then
-    echo "🔧 OpenStack detected, configuring keystone integration..."
-    export OS_CLIENT_CONFIG_FILE=/etc/kolla/clouds.yaml
-    export OS_CLOUD=kolla-admin
-    
-    # Get keystone URL for VPS and VRM configuration
-    KEYSTONE_URL=$(openstack endpoint list --service identity --interface public -f value -c URL)
-    echo "Keystone URL: $KEYSTONE_URL"
-    
-    # Update VPS configuration
-    sed -i "s#keystone_url#$KEYSTONE_URL#g" ./helm/vps/config/trustedcloud.yaml
-    
-    # Update VRM configuration
-    sed -i "s#keystone_url#$KEYSTONE_URL#g" ./helm/vrm/values-trustedcloud.yaml
-    
+if command -v openstack &>/dev/null && [ -f "/etc/kolla/clouds.yaml" ]; then
+	echo "🔧 OpenStack detected, configuring keystone integration..."
+	export OS_CLIENT_CONFIG_FILE=/etc/kolla/clouds.yaml
+	export OS_CLOUD=kolla-admin
+
+	# Get keystone URL for VPS and VRM configuration
+	KEYSTONE_URL=$(openstack endpoint list --service identity --interface public -f value -c URL)
+	echo "Keystone URL: $KEYSTONE_URL"
+
+	# Update VPS configuration
+	sed -i "s#keystone_url#$KEYSTONE_URL#g" ./helm/vps/config/trustedcloud.yaml
+
+	# Update VRM configuration
+	sed -i "s#keystone_url#$KEYSTONE_URL#g" ./helm/vrm/values-trustedcloud.yaml
+
 else
-    echo "⚠️ OpenStack not detected, EXIT"
-    exit 1
+	echo "⚠️ OpenStack not detected, EXIT"
+	exit 1
 fi
 deactivate
-
 
 # Install VRM (Virtual Resource Manager)
 echo "🔧 Installing VRM..."
@@ -233,16 +223,13 @@ helm install vps ./helm/vps -f ./helm/vps/values-trustedcloud.yaml
 echo "waiting for VPS deployments to be ready..."
 kubectl wait --for=condition=available deployment/vps-server --timeout=1200s
 
-
 echo "✅ VRM and VPS installed"
-
 
 #cloud-storage
 helm install cloudstorage ./helm/cloud-storage/ -f ./helm/cloud-storage/values-dss-public.yaml
 
 #site-cloud-storage
-helm install sss          ./helm/cloud-storage/ -f ./helm/cloud-storage/values-site-storage.yaml
-
+helm install sss ./helm/cloud-storage/ -f ./helm/cloud-storage/values-site-storage.yaml
 
 echo "waiting for CS-public deployments to be ready..."
 kubectl wait --for=condition=available deployment/data-storage-service-public-core-deployment --timeout=1200s
@@ -251,7 +238,6 @@ echo "waiting for CS-system deployments to be ready..."
 kubectl wait --for=condition=available deployment/site-storage-service-core-deployment --timeout=1200s
 
 echo "✅ CS installed"
-
 
 echo "=========================================="
 echo "Zillaforge Installation completed successfully!"

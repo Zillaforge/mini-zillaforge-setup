@@ -49,11 +49,15 @@ sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/cloud-storage/values-dss-public.yaml
 
 echo "✅ Configuration files updated"
 
+# Install message queue
+echo "🐰 Installing RabbitMQ..."
+helm install rabbitmq oci://registry-1.docker.io/bitnamicharts/rabbitmq -f ./helm/rabbit_values.yaml
+
+echo "✅ RabbitMQ installed"
+
+
 # Install databases
 echo "🗄️ Installing databases..."
-
-echo "Installing MariaDB Galera..."
-helm install test-mariadb ./helm/mariadb-galera -f ./helm/mariadb-galera/values-trustedcloud.yaml
 
 echo "Installing PostgreSQL..."
 helm install test-postgresql ./helm/postgresql -f ./helm/postgresql/values-trustedcloud.yaml
@@ -61,13 +65,14 @@ helm install test-postgresql ./helm/postgresql -f ./helm/postgresql/values-trust
 echo "Installing Redis Sentinel..."
 helm install test-redis ./helm/redis-sentinel -f ./helm/redis-sentinel/values-trustedcloud.yaml
 
+echo "Installing MariaDB Galera..."
+helm install test-mariadb ./helm/mariadb-galera -f ./helm/mariadb-galera/values-trustedcloud.yaml
+
+echo "waiting for MariaDB Galera statefulset to be ready..."
+kubectl rollout status statefulset/mariadb-galera
+
 echo "✅ Databases installed"
 
-# Install message queue
-echo "🐰 Installing RabbitMQ..."
-helm install rabbitmq oci://registry-1.docker.io/bitnamicharts/rabbitmq -f ./helm/rabbit_values.yaml
-
-echo "✅ RabbitMQ installed"
 
 # Install core services
 echo "🔐 Installing core services..."

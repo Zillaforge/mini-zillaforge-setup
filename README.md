@@ -37,8 +37,8 @@ cd mini-zillaforge-setup
 git submodule update --init --recursive
 
 
-# 1. Prerequisites (run as root)
-sudo ./prerequisite.sh
+# 1. Prerequisites
+./prerequisite.sh
 source ~/.bashrc
 
 

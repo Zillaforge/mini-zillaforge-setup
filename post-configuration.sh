@@ -38,9 +38,9 @@ openstack network create ExNet \
 
 openstack subnet create ExSubnet \
   --network ExNet \
-  --subnet-range 192.168.100.0/24 \
-  --allocation-pool start=192.168.100.10,end=192.168.100.50 \
-  --gateway 192.168.100.1 \
+  --subnet-range 10.0.2.0/24 \
+  --allocation-pool start=10.0.2.10,end=10.0.2.50 \
+  --gateway 10.0.2.2 \
   --no-dhcp
 
 set -e  # Re-enable exit on error

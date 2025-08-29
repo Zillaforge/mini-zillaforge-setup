@@ -11,6 +11,15 @@ echo "⚠️  WARNING: This will remove all Zillaforge services and data!"
 echo "Press Ctrl+C to cancel, or wait 10 seconds to continue..."
 sleep 10
 
+
+# Remove CS services
+echo "🗑️ Removing SSS and CS services..."
+
+helm delete cloudstorage 2>/dev/null || echo "Cloud Storage not found or already removed"
+helm delete sss 2>/dev/null || echo "SSS not found or already removed"
+
+echo "✅ SSS and CS services removed" 
+
 # Remove VRM and VPS services
 echo "🗑️ Removing VRM and VPS services..."
 set +e  # Don't exit if helm delete fails (chart might not exist)

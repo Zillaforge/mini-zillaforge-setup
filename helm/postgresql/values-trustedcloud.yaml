@@ -1,7 +1,7 @@
 postgresql:
   replicaCount: 1 
   image:
-    repository: bitnami/postgresql-repmgr
+    repository: bitnamilegacy/postgresql-repmgr
     tag: 11.14.0
   nodeAffinityPreset:
     type: "hard"
@@ -19,8 +19,8 @@ volumePermissions: #補這行 給權限，過了
 pgpool:
   replicaCount: 1
   image:
-    repository: bitnami/pgpool
-    tag: 4.2.4-debian-10-r41
+    repository: bitnamilegacy/pgpool
+    tag: 4.2.4
   nodeAffinityPreset:
     type: "hard"
     key: "kubernetes.io/hostname"

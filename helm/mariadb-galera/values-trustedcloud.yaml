@@ -1,9 +1,9 @@
 image:
-  name: bitnami/mariadb-galera:10.5.18
+  name: bitnamilegacy/mariadb-galera:10.5.18
 
 initContainers:
   - name: volume-permissions
-    image: bitnami/os-shell
+    image: bitnamilegacy/os-shell
     command:
     - /bin/bash
     - -ec

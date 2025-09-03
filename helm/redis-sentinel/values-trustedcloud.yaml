@@ -1,5 +1,5 @@
 images:
-  redis: bitnami/redis
+  redis: bitnamilegacy/redis
 
 redis:
   app: redis

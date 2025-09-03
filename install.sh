@@ -50,7 +50,7 @@ echo "✅ Configuration files updated"
 
 # Install message queue
 echo "🐰 Installing RabbitMQ..."
-helm install rabbitmq oci://registry-1.docker.io/bitnamicharts/rabbitmq -f ./helm/rabbit_values.yaml
+helm install rabbitmq oci://registry-1.docker.io/bitnamicharts/rabbitmq -f ./helm/rabbit_values.yaml --set image.repository=bitnamilegacy/rabbitmq --set global.security.allowInsecureImages=true
 
 echo "✅ RabbitMQ installed"
 

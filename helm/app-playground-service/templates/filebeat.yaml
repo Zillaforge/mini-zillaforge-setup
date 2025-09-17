@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.app }}-filebeat-config
+data:
+  filebeat.yml: |
+    filebeat.inputs:
+    - type: filestream
+      id: appplaygroundservice
+      paths:
+        - /var/log/ASUS/app_playground_service_access.log
+      parsers:
+        - ndjson:
+            target: ""
+            add_error_key: true
+    processors:
+      - add_host_metadata:
+          when.not.contains.tags: forwarded
+      - drop_fields:
+          fields: ["agent","ecs","host"]
+          ignore_missing: true
+      {{- if and .Values.elasticSearch .Values.elasticSearch.auditLogName}}
+      - add_fields:
+          target: service
+          fields:
+            auditLogName: {{ .Values.elasticSearch.auditLogName }}
+      {{- else }}
+      - copy_fields:
+          fields:
+          - from: service.name
+            to: service.auditLogName
+          fail_on_error: false
+          ignore_missing: true
+      {{- end }}
+    setup.template.name: "accesslog"
+    setup.template.pattern: "accesslog-*"
+    setup.template.settings:
+      index.number_of_shards: 1
+      index.number_of_replicas: 1
+      index.lifecycle.name: accesslog-ilm
+      index.routing.allocation.require._tier_preference: data_hot
+    setup.template.append_fields:
+      - name: cloudinfra_log_type
+        type: keyword
+        ignore_above: 128
+      - name: project.id
+        type: keyword
+        ignore_above: 128
+      - name: saatUser.id
+        type: keyword
+        ignore_above: 128
+      - name: action.id
+        type: keyword
+        ignore_above: 128
+      - name: action.name
+        type: keyword
+        ignore_above: 512
+      - name: action.message
+        type: text
+      - name: action.time
+        type: date
+    logging.to_files: true
+    logging.metrics.enabled: false
+    output.elasticsearch:
+      {{- toYaml .Values.elasticSearch | nindent 6 }}
+        

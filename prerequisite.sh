@@ -7,6 +7,26 @@ echo "=========================================="
 echo "Running Prerequisites Setup"
 echo "=========================================="
 
+# 詢問是否使用全自動安裝模式
+while true; do
+    read -p "Do you want to use fully automatic install prerequisites? (y/n): " answer
+    case "$answer" in
+        [Yy]* )
+            export ENABLE_AUTO_DEPLOY_MODE="true"
+            echo -e "${GREEN} Automatic deployment mode enabled. ${ENDCOLOR}"
+            break
+            ;;
+        [Nn]* )
+            echo -e "${GREEN} Manual deployment mode selected. ${ENDCOLOR}"
+            break
+            ;;
+        * )
+            echo "Invalid input. Please enter 'y' or 'n'."
+            ;;
+    esac
+done
+
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 

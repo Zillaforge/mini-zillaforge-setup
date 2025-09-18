@@ -10,7 +10,7 @@ images:
 core:
   enabled: true
   configmap:
-    version: 0.0.7-8391c53f
+    version: 0.0.7
     kind: AppPlaygroundService
     app_playground_service:
       instance: AppPlaygroundService-TrustCloud
@@ -132,7 +132,7 @@ core:
 scheduler:
   enabled: true
   configmap:
-    version: 0.0.7-8391c53f
+    version: 0.0.7
     kind: AppPlaygroundServiceScheduler
     app_playground_service_scheduler:
       instance: AppPlaygroundServiceScheduler-TrustCloud

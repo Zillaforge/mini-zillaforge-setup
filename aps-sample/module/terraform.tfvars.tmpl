@@ -1,0 +1,11 @@
+openstack_auth_url    = "http://192.168.0.200:5000/v3"
+openstack_tenant_id   = "{{ .project_id }}"
+openstack_domain_name = "trustedcloud"
+
+openstack_application_credential_id     = "{{ .application_credential_id }}"
+openstack_application_credential_secret =  "{{ .application_credential_secret }}"
+
+image_id   = "639db716-9961-4119-b1d9-e3dffa5758fd"   # Cirros image UUID
+flavor_id  = "{{ .flavor_id }}"                                # 一個小的 flavor
+ssh_key_pair = "{{ .ssh_key_pair }}"
+network_id   = "{{ .network_id }}"

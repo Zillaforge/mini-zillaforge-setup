@@ -1,0 +1,86 @@
+#cloud-config
+ssh_pwauth: True
+
+users:
+  - default
+  - name: root
+    lock_passwd: false
+    hashed_passwd: ${root_passwd}
+
+write_files:
+  - path: /etc/rsyslog.d/50-default.conf
+    content: |
+      *.* /var/log/aps/syslog
+
+  - path: /etc/logrotate.d/custom_syslog
+    content: |
+      /var/log/aps/syslog {
+          daily
+          rotate 7
+          compress
+          delaycompress
+          missingok
+          notifempty
+          create 0640 root utmp
+          postrotate
+              /usr/lib/rsyslog/rsyslog-rotate
+          endscript
+      }
+
+
+runcmd:
+  # Due to the default behavior set in /etc/cloud/cloud.cfg for the 'ubuntu' user,
+  # we cannot set the password directly in the 'users' section. Therefore, we use
+  # usermod to unlock the 'ubuntu' user and set the password simultaneously.
+  - [ 'usermod', '-p', '${root_passwd}', 'ubuntu' ]
+
+  # Set timezone to UTC+8
+  - timedatectl set-timezone Asia/Taipei
+
+  # Set syslog path
+  - mkdir -p /var/log/aps
+  - systemctl restart rsyslog
+
+  # Configure SSH
+  - |
+    if [ -n "${ssh_port}" ]; then
+      echo "Set ssh port" >> /var/log/aps/cloud-init-output.log
+      sed -i 's/^#Port 22/Port ${ssh_port}/' /etc/ssh/sshd_config
+      systemctl restart sshd
+    else
+      echo "Disable sshd" >> /var/log/aps/cloud-init-output.log
+      systemctl disable sshd
+      systemctl stop sshd
+    fi
+
+  # Comment out users_groups module in /etc/cloud/cloud.cfg for snapshoot boot volume
+  - sed -i 's/^\(\s*-\s*users_groups\s*\)$/#\1/' /etc/cloud/cloud.cfg
+
+  # Create and enable Jupyter systemd service
+  - echo "Creating Jupyter systemd service" >> /var/log/aps/cloud-init-output.log
+  - |
+    cat <<EOF > /etc/systemd/system/jupyter.service
+    [Unit]
+    Description=Jupyter Lab
+    After=network.target
+
+    [Service]
+    Type=simple
+    User=ubuntu
+    WorkingDirectory=/home/ubuntu
+    ExecStart=/usr/local/bin/jupyter lab --port=${jupyter_port} --no-browser --ip=0.0.0.0 --allow-root --NotebookApp.token=''
+    Restart=always
+    RestartSec=10
+    StandardOutput=syslog
+    StandardError=syslog
+    SyslogIdentifier=jupyter_lab
+
+    [Install]
+    WantedBy=multi-user.target
+    EOF
+  - systemctl daemon-reload
+  - systemctl enable jupyter.service
+  - systemctl start jupyter.service
+
+
+final_message: "The system is finally up, after $UPTIME seconds"

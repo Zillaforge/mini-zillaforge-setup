@@ -239,6 +239,12 @@ kubectl wait --for=condition=available deployment/site-storage-service-core-depl
 
 echo "✅ CS installed"
 
+helm install aps ./helm/app-playground-service -f ./helm/app-playground-service/values-trustedcloud.yaml
+echo "waiting for APS deployments to be ready..."
+kubectl wait --for=condition=available deployment/app-playground-service-core-deployment --timeout=1200s
+
+echo "✅ APS installed"
+
 echo "=========================================="
 echo "Zillaforge Installation completed successfully!"
 echo "All services including VPS and VRM have been installed!"

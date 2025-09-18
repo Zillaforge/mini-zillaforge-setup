@@ -1,9 +1,9 @@
 app: app-playground-service
 
 images:
-  aps: docker.io/ociscloud/app-playground-service:0.0.7-8391c53f
-  debugger: docker.io/ociscloud/debugger:1.0.2
-  eventpublishPlugin: docker.io/ociscloud/event-publish-plugin:0.1.2
+  aps: Zillaforge/app-playground-service:0.0.7
+  debugger: Zillaforge/debugger:1.0.2
+  eventpublishPlugin: Zillaforge/event-publish-plugin:0.1.2
   #filebeat: 
   pullPolicy: IfNotPresent
 
@@ -58,7 +58,7 @@ core:
       mariadb:
         host: mariadb-galera:3306
         account: root
-        password: mariadbrootuserpassword
+        password: password
         name: aps
         timeout: 5
         max_open_conns: 150

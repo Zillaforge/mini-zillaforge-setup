@@ -1,0 +1,84 @@
+{
+   "questions":[
+      {
+         "label":"{{ .flavor_label }}",
+         "description":"{{ .flavor_description }}",
+         "type":"vpsFlavor",
+         "variable":"flavor_id",
+         "group":"hardware",
+         "required":true,
+         "order": 0,
+         "default":""
+      },
+      {
+         "label":"{{ .network_label }}",
+         "description":"{{ .network_description }}",
+         "type":"vpsNetwork",
+         "variable":"network_id",
+         "group":"network",
+         "required":true,
+         "order": 0,
+         "default":""
+      },
+      {
+         "label":"{{ .security_group_label }}",
+         "description":"{{ .security_group_description }}",
+         "type":"vpsSecurityGroups",
+         "variable":"security_group_ids",
+         "group":"network",
+         "required":true,
+         "order": 0,
+         "default":[]
+      },
+      {
+         "label":"{{ .jupyter_port_label }}",
+         "description":"{{ .jupyter_port_description }}",
+         "type":"port",
+         "variable":"service_port",
+         "group":"network",
+         "required":false,
+         "order": 0,
+         "default":"8888"
+      },      
+      {
+         "label":"{{ .ssh_port_label }}",
+         "description":"{{ .ssh_port_description }}",
+         "type":"sshPort",
+         "variable":"ssh_port",
+         "group":"authentication",
+         "required":true,
+         "order": 0,
+         "default":"22"
+      },
+      {
+         "label":"{{ .keypair_label }}",
+         "description":"{{ .keypair_description }}",
+         "type":"vpsKeypair",
+         "variable":"ssh_key_pair",
+         "group":"authentication",
+         "required":true,
+         "order": 0,
+         "default":""
+      },
+      {
+         "label":"{{ .password_label }}",
+         "description":"{{ .password_description }}",
+         "type":"password",
+         "variable":"password",
+         "group":"authentication",
+         "required":true,
+         "order": 0,
+         "default":""
+      },
+      {
+         "label":"{{ .boot_volume_label }}",
+         "description":"{{ .boot_volume_description }}",
+         "type":"vpsBootVolume",
+         "variable":"boot_volume_id",
+         "group":"not_exposed",
+         "required":false,
+         "order": 0,
+         "default":""
+      }
+   ]
+}

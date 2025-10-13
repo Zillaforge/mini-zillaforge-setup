@@ -48,6 +48,17 @@ sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/cloud-storage/values-dss-public.yaml
 
 echo "✅ Configuration files updated"
 
+echo "📝 Patching Traefik service to use specific NodePort to avoid conflicts..."
+
+kubectl patch service traefik -n kube-system \
+  --type='json' \
+  -p='[
+    {"op":"replace","path":"/spec/ports/0/nodePort","value":31111},
+    {"op":"replace","path":"/spec/ports/1/nodePort","value":32222}
+  ]'
+
+echo "✅ Traefik service patched with NodePort 31111 and 32222"
+
 # Install message queue
 echo "🐰 Installing RabbitMQ..."
 helm install rabbitmq oci://registry-1.docker.io/bitnamicharts/rabbitmq -f ./helm/rabbit_values.yaml --set image.repository=bitnamilegacy/rabbitmq --set global.security.allowInsecureImages=true

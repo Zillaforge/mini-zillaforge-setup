@@ -29,6 +29,11 @@ helm delete vps 2>/dev/null || echo "VPS not found or already removed"
 
 echo "✅ VRM and VPS services removed"
 
+# Remove APS service
+echo "🗑️ Removing APS service..."
+helm delete aps 2>/dev/null || echo "APS not found or already removed"
+echo "✅ APS service removed"
+
 # Remove portals
 echo "🗑️ Removing portals..."
 helm delete admin-portal 2>/dev/null || echo "Admin portal not found or already removed"

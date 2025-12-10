@@ -4,7 +4,7 @@ images:
   cloudstorage: Zillaforge/cloud-storage:2.10.6
   eventpublishPlugin: Zillaforge/event-publish-plugin:0.1.2
   debugger: Zillaforge/debugger:1.0.2
-  filebeat: 10.247.4.4:80/trusted-cloud/filebeat:8.14.3
+  filebeat: elastic/filebeat:8.14.3
 
 core:
   enabled: true

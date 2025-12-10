@@ -293,7 +293,7 @@ serviceMonitor:
 deployment:
   spec:
 
-# elasticSearch:
+elasticSearch:
   hosts: ["http://elasticsearch-es-http.default.svc.cluster.local:9200"]
   index: accesslog-%{[service.auditLogName]}
 #   protocol: "https"

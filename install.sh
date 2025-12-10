@@ -98,7 +98,7 @@ helm install es-kb-quickstart elastic/eck-stack --wait --timeout 5m
 
 #修改一些東西(kibana+elastic的設定)
 echo "Applying Elasticsearch configuration..."
-kubectl apply -f ./elastic/reconfigure_elasticsearch.yaml
+kubectl apply -f ./helm/reconfigure_elasticsearch.yaml
 echo "Waiting for Elasticsearch pods to be ready..."
 kubectl rollout status statefulset/elasticsearch-master
 echo "Elasticsearch configuration complete."

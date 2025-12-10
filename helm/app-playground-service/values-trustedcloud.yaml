@@ -4,7 +4,7 @@ images:
   aps: Zillaforge/app-playground-service:0.0.7
   debugger: Zillaforge/debugger:1.0.2
   eventpublishPlugin: Zillaforge/event-publish-plugin:0.1.2
-  #filebeat: 
+  filebeat: elastic/filebeat:8.14.3
   pullPolicy: IfNotPresent
 
 core:
@@ -220,14 +220,14 @@ volume:
 serviceMonitor:
   enable: false
 
-# elasticSearch:
-#   hosts: [""]
-#   index: accesslog-%{[service.auditLogName]}
-#   protocol: "https"
-#   pipeline: pipeline-%{[service.auditLogName]}
-#   preset: balanced
-#   username: "elastic"
-#   password: "password"
-#   ssl:
-#     enabled: true
-#     verification_mode: none
+elasticSearch:
+  hosts: ["http://elasticsearch-es-http.default.svc.cluster.local:9200"]
+  index: accesslog-%{[service.auditLogName]}
+  # protocol: "https"
+  pipeline: pipeline-%{[service.auditLogName]}
+  # preset: balanced
+  username: "elastic"
+  password: "password"
+  # ssl:
+  #  enabled: true
+  #  verification_mode: none

@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.app }}-config
+data:
+  audit-track-service.yaml: |
+{{- toYaml .Values.core.configmap | nindent 4 }}
+  zh-tw.json: |
+    [
+      {
+          "key": "PegasusIAM",
+          "value": "Pegasus存取管理(範例)"
+      },
+      {
+          "key": "admin:Metrics",
+          "value": "管理員:數據指標(範例)"
+      },
+      {
+          "key": "user:ListProjects",
+          "value": "使用者:檢視所有專案(範例)"
+      }
+    ]

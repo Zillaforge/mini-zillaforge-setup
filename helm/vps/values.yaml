@@ -50,15 +50,15 @@ jobs:
 
 service_account: "pegasus-system-admin"
 
-filebeat_enabled: false
+filebeat_enabled: true
 elasticSearch:
   hosts: []
   index: accesslog-%{[service.auditLogName]}
-  protocol: "https"
+  #protocol: "https"
   pipeline: pipeline-%{[service.auditLogName]}
-  preset: balanced
-  username: ""
-  password: ""
-  ssl:
-    enabled: true
-    verification_mode: none
+  #preset: balanced
+  username: "elastic"
+  password: "password"
+  # ssl:
+  #   enabled: true
+  #   verification_mode: none

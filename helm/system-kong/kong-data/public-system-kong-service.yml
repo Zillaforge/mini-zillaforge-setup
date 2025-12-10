@@ -541,4 +541,73 @@ services:
   tags:
   - site-storage-service
   write_timeout: 60000
-
+- connect_timeout: 60000
+  enabled: true
+  host: audit-track-service-core-service
+  name: ats-service
+  path: /
+  port: 8115
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+  - https_redirect_status_code: 426
+    methods:
+    - GET
+    - POST
+    - DELETE
+    - PUT
+    - PATCH
+    - HEAD
+    - OPTIONS
+    name: ats-auth
+    path_handling: v1
+    paths:
+    - /ats/api/v1
+    plugins:
+    - config:
+        enable_json_header: null
+        enable_permission_validate: null
+        enable_raw_header: true
+        enable_url_encode: null
+        hosts:
+        - iam-service:5051
+        redirect_types: null
+        redirect_url: null
+        token_key_in_cookie: null
+        verified_service: null
+      enabled: true
+      name: kong-auth-plugin
+      protocols:
+      - grpc
+      - grpcs
+      - http
+      - https
+    preserve_host: false
+    protocols:
+    - http
+    - https
+    regex_priority: 0
+    request_buffering: true
+    response_buffering: true
+    strip_path: false
+  - https_redirect_status_code: 426
+    methods:
+    - GET
+    - OPTIONS
+    name: ats-no-auth
+    path_handling: v1
+    paths:
+    - /ats/api/v1/version
+    - /ats/api/v1/scopes
+    preserve_host: false
+    protocols:
+    - http
+    - https
+    regex_priority: 0
+    request_buffering: true
+    response_buffering: true
+    strip_path: false
+  tags:
+  - audit-track-service-core-service
+  write_timeout: 60000

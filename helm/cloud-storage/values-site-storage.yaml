@@ -4,7 +4,7 @@ images:
   cloudstorage: Zillaforge/cloud-storage:2.10.6
   eventpublishPlugin: Zillaforge/event-publish-plugin:0.1.2
   debugger: Zillaforge/debugger:1.0.2
-  #filebeat: 10.247.4.4:80/trusted-cloud/filebeat:8.14.3
+  filebeat: 10.247.4.4:80/trusted-cloud/filebeat:8.14.3
 
 core:
   enabled: true
@@ -186,15 +186,15 @@ serviceMonitor:
 deployment:
   spec:
 
-# elasticSearch:
-#   hosts: ["https://10.247.4.7:9200","https://10.247.4.8:9200","https://10.247.4.9:9200"]
-#   index: accesslog-%{[service.auditLogName]}
+elasticSearch:
+  hosts: ["http://elasticsearch-es-http.default.svc.cluster.local:9200"]
+  index: accesslog-%{[service.auditLogName]}
 #   protocol: "https"
-#   pipeline: pipeline-%{[service.auditLogName]}
-#   auditLogName: "Site-Storage-Service"
+  pipeline: pipeline-%{[service.auditLogName]}
+  auditLogName: "Site-Storage-Service"
 #   preset: balanced
-#   username: "elastic"
-#   password: "FD7Tw9zy0M095tQy"
+  username: "elastic"
+  password: "password"
 #   ssl:
 #     enabled: true
 #     verification_mode: none

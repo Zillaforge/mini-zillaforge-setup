@@ -1,0 +1,67 @@
+app: audit-track-service
+images:
+  audittrackservice: 
+  debugger: 
+core:
+  enabled: true
+  configmap:
+    version: 0.0.1
+    kind: AuditTrackService
+    AuditTrackService:
+      instance: AuditTrackService
+      developer: true
+      # http:
+        # host: 0.0.0.0:8115
+        # access_control:
+          # allow_origins: ["*"]
+          # allow_credentials: true
+          # allow_headers: ["Origin", "Content-Length", "Content-Type", "Authorization"]
+          # allow_methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
+          # expose_headers: ["host-id", "version-id", "location-id"]
+      logger:
+        system_log:
+          path: log/
+          mode: debug
+          show_in_console: true
+        access_log:
+          path: log/
+        event_consume_log:
+          path: log/
+      tracer:
+        enable: true
+        host: http://pegasus-cloud-jaeger:14268/api/traces
+        timeout: 10
+      # translation_list 定義 action 對應名稱詞彙的列表
+      translation_list:
+      - name: LanguageA
+        path: "etc/language_a.json"
+      - name: LanguageB
+        path: "etc/language_b.json"
+    elasticsearch:
+      hosts:
+      - http://elasticsearch-es-http.elastic-stack.svc.cluster.local:9200
+      # - https://.8:9200 # hot data
+      # - https://.9:9200 # cold data
+      account: elastic
+      password: password
+      timeout: 60
+    authentication:
+      service: pegasus-cloud-iam
+    services:
+      - name: pegasus-cloud-iam
+        kind: iam
+        hosts: 
+          - pegasus-cloud-iamserver:5051
+        tls:
+          enable: false
+          cert_path: /root/server-csr/IAM.pem
+        connection_per_host: 3
+
+service:
+  core:
+    enableNodePort: true
+    externalIPs: []
+    http:
+      port: 8115
+      nodePort: 32115
+

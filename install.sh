@@ -105,8 +105,8 @@ echo "Elasticsearch configuration complete."
 
 #Install filebeats
 
-echo "Installing filebeat..."
-helm install filebeat ./helm/filebeat-kubernetes -f ./helm/filebeat-kubernetes/values-openstack.yaml
+# echo "Installing filebea..."
+# helm install filebeat ./helm/filebeat-kubernetes -f ./helm/filebeat-kubernetes/values-openstack.yaml
 
 # Install core services
 echo "🔐 Installing core services..."
@@ -130,6 +130,9 @@ echo "Installing System Kong (API Gateway)..."
 helm install systemkong ./helm/system-kong -f ./helm/system-kong/values-public.yaml
 
 echo "✅ Core services installed"
+
+echo "Installing audit-track-service..."
+helm install ats ./audit-track-service -f ./audit-track-service/values-core.yaml
 
 # Install portals
 echo "🌐 Installing portals..."

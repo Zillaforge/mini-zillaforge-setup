@@ -38,7 +38,7 @@ core:
         path: "/etc/ASUS/zh-tw.json"
     elasticsearch:
       hosts:
-      - http://elasticsearch-es-http.elastic-stack.svc.cluster.local:9200
+      - http://elasticsearch-es-http.default.svc.cluster.local:9200
       # - https://.8:9200 # hot data
       # - https://.9:9200 # cold data
       account: elastic
@@ -554,7 +554,7 @@ service:
     enableNodePort: true
 
 elasticSearch:
-  hosts: ["http://elasticsearch-es-http.elastic-stack.svc.cluster.local:9200"]
+  hosts: ["http://elasticsearch-es-http.default.svc.cluster.local:9200"]
   index: accesslog-%{[service.auditLogName]}
   # protocol: "https"
   pipeline: pipeline-%{[service.auditLogName]}

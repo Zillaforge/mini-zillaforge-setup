@@ -132,7 +132,7 @@ helm install systemkong ./helm/system-kong -f ./helm/system-kong/values-public.y
 echo "✅ Core services installed"
 
 echo "Installing audit-track-service..."
-helm install ats ./audit-track-service -f ./audit-track-service/values-core.yaml
+helm install ats ./helm/audit-track-service -f ./helm/audit-track-service/values-core.yaml
 
 # Install portals
 echo "🌐 Installing portals..."

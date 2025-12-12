@@ -8,6 +8,6 @@ deployment:
 
 filebeat_enabled: false
 elasticSearch:
-  hosts: ["10.247.4.7:9200","10.247.4.8:9200","10.247.4.9:9200"]
-  username: "aaa"
-  password: "bbb"
+  hosts: ["http://elasticsearch-es-http.default.svc.cluster.local:9200"]
+  username: "elastic"
+  password: "password"

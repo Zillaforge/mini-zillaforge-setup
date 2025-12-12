@@ -3,7 +3,7 @@ images:
   eventpublishPlugin: Zillaforge/event-publish-plugin:0.1.2 #讀本地docker
   debugger: Zillaforge/debugger:1.0.2 #讀本地docker
   #NCHCiServiceAuthPlugin: 用不到~
-  # filebeat: elastic/filebeat:8.14.3 #官方
+  filebeat: elastic/filebeat:8.14.3
 
 
 configmap:
@@ -261,14 +261,14 @@ serviceMonitor:
 deployment:
   spec: 
 
-# elasticSearch:   #filebeat，用不到砍掉
-#   hosts: ["https://10.247.4.7:9200","https://10.247.4.8:9200","https://10.247.4.9:9200"]
-#   index: accesslog-%{[service.auditLogName]}
+elasticSearch: 
+  hosts: ["http://elasticsearch-es-http.default.svc.cluster.local:9200"]
+  index: accesslog-%{[service.auditLogName]}
 #   protocol: "https"
-#   pipeline: pipeline-%{[service.auditLogName]}
+  pipeline: pipeline-%{[service.auditLogName]}
 #   preset: balanced
-#   username: "elastic"
-#   password: "password"
+  username: "elastic"
+  password: "password"
 #   ssl:
 #     enabled: true
 #     verification_mode: none

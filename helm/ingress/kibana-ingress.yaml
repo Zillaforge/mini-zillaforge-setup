@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kibana-ingress
+  namespace: default    # 這裡要填 Kibana 所在 namespace
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: kibana.hostip.nip.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: es-kb-quickstart-eck-kibana-kb-http   # 注意 Service 名稱
+            port:
+              number: 5601
+              

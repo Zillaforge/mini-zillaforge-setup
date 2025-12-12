@@ -1,0 +1,7 @@
+apiVersion: v2
+name: filebeat-kubernetes
+description: Helm chart of filebeat to gather kubernetes pod logs
+
+type: application
+version: 1.0.0
+appVersion: "8.14.3"

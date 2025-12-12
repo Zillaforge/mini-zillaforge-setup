@@ -40,6 +40,7 @@ sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/ingress/admin.yaml
 sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/ingress/ingress_kong.yaml
 sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/ingress/www.yaml
 sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/ingress/user.yaml
+sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/ingress/kibana-ingress.yaml
 sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/portal/values-user-portal-public.yaml
 sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/portal/values-admin-panel-public.yaml
 sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/ingress/ssscloudstorage.yaml
@@ -82,6 +83,31 @@ kubectl rollout status statefulset/mariadb-galera
 
 echo "✅ Databases installed"
 
+#Install elastsearch
+echo "Installing ECK Operator..."
+kubectl create -f https://download.elastic.co/downloads/eck/3.2.0/crds.yaml
+kubectl apply -f https://download.elastic.co/downloads/eck/3.2.0/operator.yaml
+echo "Waiting for ECK Operator to be ready..."
+kubectl rollout status deployment/elastic-operator -n elastic-system
+
+#kibana+elastic
+helm repo add elastic https://helm.elastic.co
+helm repo update
+echo "install kibana and elastic ..."
+helm install es-kb-quickstart elastic/eck-stack --wait --timeout 5m
+
+#修改一些東西(kibana+elastic的設定)
+echo "Applying Elasticsearch configuration..."
+kubectl apply -f ./helm/reconfigure_elasticsearch.yaml
+echo "Waiting for Elasticsearch pods to be ready..."
+kubectl rollout status statefulset/elasticsearch-master
+echo "Elasticsearch configuration complete."
+
+#Install filebeats
+
+# echo "Installing filebea..."
+# helm install filebeat ./helm/filebeat-kubernetes -f ./helm/filebeat-kubernetes/values-openstack.yaml
+
 # Install core services
 echo "🔐 Installing core services..."
 
@@ -104,6 +130,9 @@ echo "Installing System Kong (API Gateway)..."
 helm install systemkong ./helm/system-kong -f ./helm/system-kong/values-public.yaml
 
 echo "✅ Core services installed"
+
+echo "Installing audit-track-service..."
+helm install ats ./helm/audit-track-service -f ./helm/audit-track-service/values-core.yaml
 
 # Install portals
 echo "🌐 Installing portals..."

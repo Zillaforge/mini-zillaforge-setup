@@ -149,6 +149,9 @@ if command -v openstack &>/dev/null && [ -f "/etc/kolla/clouds.yaml" ]; then
 	echo "restart keystone container"
 	sudo docker exec -it $container_name service apache2 restart
 
+	echo "restart memcached container"
+	sudo docker restart memcached
+
 	# Wait for container to report healthy
 	echo "Waiting for $container_name to become healthy..."
 	while [ "$(sudo docker inspect --format='{{.State.Health.Status}}' $container_name 2>/dev/null)" != "healthy" ]; do

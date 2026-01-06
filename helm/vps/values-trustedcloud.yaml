@@ -6,7 +6,7 @@ service:
 deployment:
   spec:
 
-filebeat_enabled: false
+filebeat_enabled: true
 elasticSearch:
   hosts: ["http://elasticsearch-es-http.default.svc.cluster.local:9200"]
   username: "elastic"

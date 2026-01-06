@@ -1,0 +1,24 @@
+{{- if .Values.core.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.app }}-core-service
+  namespace: {{ .Values.namespace }}
+spec:
+  {{- if eq .Values.service.core.enableNodePort true }}
+  type: NodePort
+  {{- end }}
+  {{- if .Values.service.core.externalIPs }}
+  externalIPs: {{ .Values.service.core.externalIPs }}
+  {{- end }}
+  selector:
+    app: {{ .Values.app }}
+  ports:
+    - name: http-port
+      port: {{ .Values.service.core.http.port }}
+      targetPort: {{ .Values.service.core.http.port }}
+      {{- if eq .Values.service.core.enableNodePort true }}
+      nodePort: {{ .Values.service.core.http.nodePort }}
+      {{- end }}
+      protocol: TCP
+{{- end }}

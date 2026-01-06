@@ -1,0 +1,20 @@
+image:
+  filebeat: elastic/filebeat:8.14.3
+
+elasticsearch:
+  username: elastic
+  password: password
+
+config:
+  setup.template.name: "kubernetes"
+  setup.template.pattern: "kubernetes-*"
+  setup.template.settings:
+    index.number_of_shards: 1
+    index.number_of_replicas: 1
+    index.lifecycle.name: system-log-ilm
+  output.elasticsearch:
+    index: kubernetes-%{[fields.data_type]}
+    hosts: ["http://elasticsearch-es-http.default.svc.cluster.local:9200"]
+    # ssl:
+    #   enabled: true
+    #   verification_mode: none

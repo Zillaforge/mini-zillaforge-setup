@@ -4,7 +4,7 @@ images:
   vrm: Zillaforge/virtual-registry-management:0.0.6
   debugger: Zillaforge/debugger:1.0.2
   eventpublishPlugin: Zillaforge/event-publish-plugin:0.1.2
-  #filebeat: 10.247.4.4:80/trusted-cloud/filebeat:8.14.3
+  filebeat: elastic/filebeat:8.14.3
 
 core:
   enabled: true
@@ -34,11 +34,11 @@ core:
         enable: false
         host: http://jaeger-service:14268/api/traces
         timeout: 10
-      # scopes:
-      #   project_default_count: 10
-      #   project_default_size: 1099511627776
-      #   availability_district: "tw-tc-ad1"
-      #   snapshot_size: "metadata.actual_size"
+      scopes:
+        project_default_count: 10
+        project_default_size: 1099511627776
+        availability_district: "tw-tc-ad1"
+        snapshot_size: "metadata.actual_size"
       filepath: 
       # <scheme>://<path> => <root>/<prefix>/<path>/<suffix>
       - name: dss-public-trustedcloud
@@ -239,14 +239,14 @@ volumes: #因為都在Local建立，所以要在本機設定好路徑
 serviceMonitor:
   enable: false
 
-# elasticSearch:
-#   hosts: ["https://10.247.4.7:9200","https://10.247.4.8:9200","https://10.247.4.9:9200"]
-#   index: accesslog-%{[service.auditLogName]}
+elasticSearch:
+  hosts: ["http://elasticsearch-es-http.default.svc.cluster.local:9200"]
+  index: accesslog-%{[service.auditLogName]}
 #   protocol: "https"
-#   pipeline: pipeline-%{[service.auditLogName]}
+  pipeline: pipeline-%{[service.auditLogName]}
 #   preset: balanced
-#   username: "elastic"
-#   password: "password"
+  username: "elastic"
+  password: "password"
 #   ssl:
 #     enabled: false
 #     verification_mode: none

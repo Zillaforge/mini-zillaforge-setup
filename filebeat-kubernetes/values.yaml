@@ -1,0 +1,73 @@
+image:
+  filebeat: elastic/filebeat:8.14.3
+
+elasticsearch:
+  username: elastic
+  password: password
+
+livenessProbe:
+  failureThreshold: 3
+  initialDelaySeconds: 10
+  periodSeconds: 30
+  timeoutSeconds: 5
+
+readinessProbe:
+  failureThreshold: 3
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+
+extraVolumeMounts: []
+extraVolumes: []
+
+config:
+  filebeat.autodiscover:
+    providers:
+      - type: kubernetes
+        node: ${NODE_NAME}
+        hints.enabled: true
+        hints.default_config:
+          type: filestream
+          id: kubernetes-container-logs-${data.kubernetes.pod.name}-${data.kubernetes.container.id}
+          paths:
+          - /var/log/containers/*-${data.kubernetes.container.id}.log
+          parsers:
+          - container: ~
+          prospector:
+           scanner:
+             fingerprint.enabled: true
+             symlinks: true
+          file_identity.fingerprint: ~
+  fields:
+    data_type: log
+  setup.template.name: "kubernetes"
+  setup.template.pattern: "kubernetes-*"
+  setup.template.settings:
+    index.number_of_shards: 1
+    index.number_of_replicas: 1
+    index.lifecycle.name: kubernetes-ilm
+    index.routing.allocation.require._tier_preference: data_hot
+  processors:
+#    - drop_event:
+#        when:
+#          or:
+#            - equals:
+#                kubernetes.namespace: kube-system
+    - add_cloud_metadata:
+    - add_host_metadata:
+    - drop_fields:
+        fields: ["agent","ecs","host.ip","host.mac","host.os","kubernetes.node.labels"]
+        ignore_missing: true
+  logging.metrics.enabled: false
+  monitoring.enabled: true
+  output.elasticsearch:
+    index: kubernetes-%{[fields.data_type]}
+    hosts: ["http://elasticsearch-es-http.default.svc.cluster.local:9200"]
+    # protocol: "https"
+    # preset: balanced
+    username: ${ELASTICSEARCH_USERNAME}
+    password: ${ELASTICSEARCH_PASSWORD}
+    # ssl:
+    #   enabled: true
+    #   verification_mode: none
+

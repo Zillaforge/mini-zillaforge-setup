@@ -176,7 +176,7 @@ if command -v openstack &>/dev/null && [ -f "/etc/kolla/clouds.yaml" ]; then
 	openstack project create $PROJECT_NAME --domain $DOMAIN_NAME
 
 	echo "restart keystone container"
-	sudo docker exec -it $container_name service apache2 restart
+	sudo docker restart $container_name
 
 	echo "restart memcached container"
 	sudo docker restart memcached
@@ -197,6 +197,7 @@ if command -v openstack &>/dev/null && [ -f "/etc/kolla/clouds.yaml" ]; then
 
 	if [ -z "$USER_ID" ]; then
 		echo "❌ Cannot find user: $USER_NAME in domain: $DOMAIN_NAME"
+		exit 1
 	else
 		echo "✅ User ID: $USER_ID"
 
@@ -205,6 +206,7 @@ if command -v openstack &>/dev/null && [ -f "/etc/kolla/clouds.yaml" ]; then
 
 		if [ -z "$PROJECT_ID" ]; then
 			echo "❌ Cannot find project: $PROJECT_NAME"
+			exit 1
 		else
 			echo "✅ Project ID: $PROJECT_ID"
 

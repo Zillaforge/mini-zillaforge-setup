@@ -34,6 +34,11 @@ echo "🗑️ Removing APS service..."
 helm delete aps 2>/dev/null || echo "APS not found or already removed"
 echo "✅ APS service removed"
 
+# Remove ATS service
+echo "🗑️ Removing APS service..."
+helm delete ats 2>/dev/null || echo "ATS not found or already removed"
+echo "✅ ATS service removed"
+
 # Remove portals
 echo "🗑️ Removing portals..."
 helm delete admin-portal 2>/dev/null || echo "Admin portal not found or already removed"
@@ -62,6 +67,13 @@ helm delete test-postgresql 2>/dev/null || echo "PostgreSQL not found or already
 helm delete test-mariadb 2>/dev/null || echo "MariaDB not found or already removed"
 
 echo "✅ Databases removed"
+
+echo "🗑️ Removing ElasticSearch..."
+helm    delete es-kb-quickstart  2>/dev/null || echo "Elasticsearch not found or already removed"
+kubectl delete -f https://download.elastic.co/downloads/eck/3.2.0/crds.yaml 2>/dev/null || echo "Elasticsearch CRD not found or already removed"
+kubectl delete -f https://download.elastic.co/downloads/eck/3.2.0/operator.yaml 2>/dev/null || echo "Elasticsearch Operator not found or already removed"
+
+echo "✅ ElasticSearch removed"
 
 set -e  # Re-enable exit on error
 

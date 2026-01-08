@@ -35,7 +35,7 @@ helm delete aps 2>/dev/null || echo "APS not found or already removed"
 echo "✅ APS service removed"
 
 # Remove ATS service
-echo "🗑️ Removing APS service..."
+echo "🗑️ Removing ATS service..."
 helm delete ats 2>/dev/null || echo "ATS not found or already removed"
 echo "✅ ATS service removed"
 

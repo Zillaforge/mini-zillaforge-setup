@@ -10,6 +10,7 @@
 			"extensions": [
 				// "golang.Go",
 				"GitHub.copilot",
+				"pjmiravalle.terraform-advanced-syntax-highlighting",
 				// "isudox.vscode-jetbrains-keybindings",
 				// "Arjun.swagger-viewer",
 				// "humao.rest-client"

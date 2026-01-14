@@ -107,7 +107,7 @@ openstack:
   enable_snapshot_actual_size: false #!!!
   enable_gpu_quota: false   #!!!
   manila:
-    enabled: false
+    enabled: true
     share_type: "default_share_type"
   vgpu_monitor:
     enabled: false  #!!!

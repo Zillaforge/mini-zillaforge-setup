@@ -66,7 +66,32 @@ OP_PROJECT_UUID=$(openstack project show trustedcloud -c id -f value)
 echo "OpenStack Project UUID: $OP_PROJECT_UUID"
 # echo "OpenStack Image ID: $OP_IMAGE_ID"
 
-deactivate
+## manila setup
+
+# create flavor for manila service instance
+# flavor id MUST match `service_instance_flavor_id` in manila-share.conf
+openstack flavor create "manila-service-flavor" \
+  --id  3a0e8d48-4c78-4b7a-b8d9-7b681094004b \
+  --ram 1024 --disk 5 --vcpus 1
+
+# Download and add manila service image to OpenStack
+echo "📥 Adding manila service image to OpenStack..."
+if [ ! -f "manila-service-image-master.qcow2" ]; then
+    wget https://tarballs.opendev.org/openstack/manila-image-elements/images/manila-service-image-master.qcow2
+fi
+
+openstack image create "manila-service-image" \
+  --file manila-service-image-master.qcow2 \
+  --disk-format qcow2 \
+  --container-format bare \
+  --public
+
+# create manila share type
+echo "Create manila share type and enable DHSS mode"
+openstack share type create default_share_type True
+
+
+# deactivate
 
 
 #更新kong用的資料庫

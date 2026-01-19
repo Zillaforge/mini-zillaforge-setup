@@ -84,7 +84,7 @@ core:
         connection_per_host: 3
       - name: opstk
         kind: openstack
-        identity_endpoint: http://140-110-139-103.nip.io:5000/v3
+        identity_endpoint: keystone_url #openstakc keystone endpoint
         admin_username: test@trusted-cloud.nchc.org.tw
         admin_password: password123
         admin_project: 14735dfa-5553-46cc-b4bd-405e711b223f  
@@ -231,3 +231,4 @@ elasticSearch:
   # ssl:
   #  enabled: true
   #  verification_mode: none
+

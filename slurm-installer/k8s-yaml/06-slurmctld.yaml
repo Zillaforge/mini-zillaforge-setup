@@ -1,0 +1,104 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: slurmctld
+  namespace: slurm
+spec:
+  ports:
+    - name: slurm
+      port: 6817
+      targetPort: 6817
+  selector:
+    app: slurmctld
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: slurmctld
+  namespace: slurm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: slurmctld
+  template:
+    metadata:
+      labels:
+        app: slurmctld
+    spec:
+      initContainers:
+        # Wait for slurmdbd to be ready
+        - name: wait-for-slurmdbd
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z slurmdbd 6819; do
+                echo "Waiting for slurmdbd to be ready..."
+                sleep 2
+              done
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "50m"
+      hostname: slurmctld
+      containers:
+        - name: slurmctld
+          image: slurm-docker-cluster:25.05.3
+          imagePullPolicy: IfNotPresent
+          command: ["/usr/local/bin/docker-entrypoint.sh"]
+          args: ["slurmctld"]             
+          ports:
+            - containerPort: 6817
+          securityContext:
+            privileged: true
+          volumeMounts:
+            # - name: slurm-config
+            #   mountPath: /etc/slurm
+            #   readOnly: true
+            # - name: slurm-log
+            #   mountPath: /var/log/slurm
+            # - name: slurm-spool
+            #   mountPath: /var/spool/slurm
+            - name: jobdir
+              mountPath: /data
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - scontrol ping
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - scontrol ping
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+      volumes:
+        # - name: slurm-config
+        #   configMap:
+        #     name: slurm-config
+        #     defaultMode: 0644
+        # - name: slurm-log
+        #   emptyDir: {}
+        # - name: slurm-spool
+        #   emptyDir: {}
+        - name: jobdir
+          persistentVolumeClaim:
+            claimName: slurm-jobdir-pvc

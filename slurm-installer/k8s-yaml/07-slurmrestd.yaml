@@ -1,0 +1,100 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: slurmrestd
+  namespace: slurm
+spec:
+  type: NodePort
+  ports:
+    - port: 6820
+      targetPort: 6820
+      nodePort: 30820
+  selector:
+    app: slurmrestd
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: slurmrestd
+  namespace: slurm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: slurmrestd
+  template:
+    metadata:
+      labels:
+        app: slurmrestd
+    spec:
+      initContainers:
+        # Wait for slurmctld to be ready
+        - name: wait-for-slurmctld
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z slurmctld 6817; do
+                echo "Waiting for slurmctld to be ready..."
+                sleep 2
+              done
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "50m"
+      hostname: slurmrestd
+      containers:
+        - name: slurmrestd
+          image: slurm-docker-cluster:25.05.3
+          imagePullPolicy: IfNotPresent
+          command: ["/usr/local/bin/docker-entrypoint.sh"]
+          args: ["slurmrestd"]             
+          ports:
+            - containerPort: 6820
+          securityContext:
+            privileged: true
+          # volumeMounts:
+          #   - name: slurm-config
+          #     mountPath: /etc/slurm
+          #     readOnly: true
+          #   - name: slurm-log
+          #     mountPath: /var/log/slurm
+          #   - name: slurmrestd-socket
+          #     mountPath: /var/run/slurmrestd
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - test -S /var/run/slurmrestd/slurmrestd.socket
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - test -S /var/run/slurmrestd/slurmrestd.socket
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      # volumes:
+      #   - name: slurm-config
+      #     configMap:
+      #       name: slurm-config
+      #       defaultMode: 0644
+      #   - name: slurm-log
+      #     emptyDir: {}
+      #   - name: slurmrestd-socket
+      #     emptyDir: {}

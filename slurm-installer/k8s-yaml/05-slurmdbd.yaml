@@ -1,0 +1,107 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: slurmdbd
+  namespace: slurm
+spec:
+  ports:
+    - port: 6819
+      targetPort: 6819
+  selector:
+    app: slurmdbd
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: slurmdbd
+  namespace: slurm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: slurmdbd
+  template:
+    metadata:
+      labels:
+        app: slurmdbd
+    spec:
+      initContainers:
+        # Wait for MySQL to be ready
+        - name: wait-for-mysql
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z mysql 3306; do
+                echo "Waiting for MySQL to be ready..."
+                sleep 2
+              done
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "50m"
+      hostname: slurmdbd
+      containers:
+        - name: slurmdbd
+          image: slurm-docker-cluster:25.05.3
+          imagePullPolicy: IfNotPresent
+          command: ["/usr/local/bin/docker-entrypoint.sh"]
+          args: ["slurmdbd"]          
+          ports:
+            - containerPort: 6819
+          env:
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: slurm-credentials
+                  key: mysql-user
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: slurm-credentials
+                  key: mysql-password
+          # volumeMounts:
+          #   - name: slurm-config
+          #     mountPath: /etc/slurm
+          #     readOnly: true
+          #   - name: slurm-log
+          #     mountPath: /var/log/slurm
+          #   - name: slurm-spool
+          #     mountPath: /var/spool/slurm
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - pidof slurmdbd
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - pidof slurmdbd
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      # volumes:
+      #   - name: slurm-config
+      #     configMap:
+      #       name: slurm-config
+      #       defaultMode: 0644
+      #   - name: slurm-log
+      #     emptyDir: {}
+      #   - name: slurm-spool
+      #     emptyDir: {}

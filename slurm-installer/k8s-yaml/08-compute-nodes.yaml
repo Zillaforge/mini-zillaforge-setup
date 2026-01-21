@@ -61,8 +61,11 @@ spec:
         - name: slurmd
           image: slurm-docker-cluster:25.05.3
           imagePullPolicy: IfNotPresent
-          command: ["/usr/local/bin/docker-entrypoint.sh"]
-          args: ["slurmd"]            
+          command:
+            - sh
+            - -c
+            - |
+              /usr/local/bin/docker-entrypoint.sh slurmd                        
           ports:
             - containerPort: 6818
           securityContext:
@@ -141,8 +144,11 @@ spec:
         - name: slurmd
           image: slurm-docker-cluster:25.05.3
           imagePullPolicy: IfNotPresent
-          command: ["/usr/local/bin/docker-entrypoint.sh"]
-          args: ["slurmd"]              
+          command:
+            - sh
+            - -c
+            - |
+              /usr/local/bin/docker-entrypoint.sh slurmd             
           ports:
             - containerPort: 6818
           securityContext:

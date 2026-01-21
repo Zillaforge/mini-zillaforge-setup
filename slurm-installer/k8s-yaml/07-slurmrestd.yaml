@@ -48,20 +48,22 @@ spec:
         - name: slurmrestd
           image: slurm-docker-cluster:25.05.3
           imagePullPolicy: IfNotPresent
-          command: ["/usr/local/bin/docker-entrypoint.sh"]
-          args: ["slurmrestd"]             
+          command:
+            - sh
+            - -c
+            - |
+              cp /tmp/jwt-pvc/jwt_hs256.key /etc/slurm/
+              chown slurm:slurm /etc/slurm/jwt_hs256.key
+              chmod 0600 /etc/slurm/jwt_hs256.key
+              /usr/local/bin/docker-entrypoint.sh slurmrestd                 
           ports:
             - containerPort: 6820
           securityContext:
             privileged: true
-          # volumeMounts:
-          #   - name: slurm-config
-          #     mountPath: /etc/slurm
-          #     readOnly: true
-          #   - name: slurm-log
-          #     mountPath: /var/log/slurm
-          #   - name: slurmrestd-socket
-          #     mountPath: /var/run/slurmrestd
+          volumeMounts:
+            - name: jwt-pvc
+              mountPath: /tmp/jwt-pvc
+              readOnly: true
           livenessProbe:
             exec:
               command:
@@ -89,12 +91,7 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "500m"
-      # volumes:
-      #   - name: slurm-config
-      #     configMap:
-      #       name: slurm-config
-      #       defaultMode: 0644
-      #   - name: slurm-log
-      #     emptyDir: {}
-      #   - name: slurmrestd-socket
-      #     emptyDir: {}
+      volumes:
+        - name: jwt-pvc
+          persistentVolumeClaim:
+            claimName: jwt-pvc

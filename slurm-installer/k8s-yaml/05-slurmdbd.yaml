@@ -37,6 +37,10 @@ spec:
                 echo "Waiting for MySQL to be ready..."
                 sleep 2
               done
+              dd if=/dev/random of=/etc/slurm/jwt_hs256.key bs=32 count=1
+          volumeMounts:
+            - name: jwt-pvc
+              mountPath: /etc/slurm
           resources:
             requests:
               memory: "32Mi"
@@ -45,9 +49,15 @@ spec:
       containers:
         - name: slurmdbd
           image: slurm-docker-cluster:25.05.3
-          imagePullPolicy: IfNotPresent
-          command: ["/usr/local/bin/docker-entrypoint.sh"]
-          args: ["slurmdbd"]          
+          imagePullPolicy: IfNotPresent 
+          command:
+            - sh
+            - -c
+            - |
+              cp /tmp/jwt-pvc/jwt_hs256.key /etc/slurm/
+              chown slurm:slurm /etc/slurm/jwt_hs256.key
+              chmod 0600 /etc/slurm/jwt_hs256.key
+              /usr/local/bin/docker-entrypoint.sh slurmdbd
           ports:
             - containerPort: 6819
           env:
@@ -55,20 +65,16 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: slurm-credentials
-                  key: mysql-user
+                  key: MYSQL_USER
             - name: MYSQL_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: slurm-credentials
-                  key: mysql-password
-          # volumeMounts:
-          #   - name: slurm-config
-          #     mountPath: /etc/slurm
-          #     readOnly: true
-          #   - name: slurm-log
-          #     mountPath: /var/log/slurm
-          #   - name: slurm-spool
-          #     mountPath: /var/spool/slurm
+                  key: MYSQL_PASSWORD
+          volumeMounts:
+            - name: jwt-pvc
+              mountPath: /tmp/jwt-pvc
+              readOnly: true
           livenessProbe:
             exec:
               command:
@@ -96,12 +102,7 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "500m"
-      # volumes:
-      #   - name: slurm-config
-      #     configMap:
-      #       name: slurm-config
-      #       defaultMode: 0644
-      #   - name: slurm-log
-      #     emptyDir: {}
-      #   - name: slurm-spool
-      #     emptyDir: {}
+      volumes:
+        - name: jwt-pvc
+          persistentVolumeClaim:
+            claimName: jwt-pvc

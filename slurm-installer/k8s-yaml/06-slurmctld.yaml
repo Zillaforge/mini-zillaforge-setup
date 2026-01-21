@@ -4,10 +4,15 @@ metadata:
   name: slurmctld
   namespace: slurm
 spec:
+  type: NodePort
   ports:
     - name: slurm
       port: 6817
       targetPort: 6817
+    - name: ssh
+      port: 22
+      targetPort: 22
+      nodePort: 30022
   selector:
     app: slurmctld
 ---
@@ -46,6 +51,9 @@ spec:
       containers:
         - name: slurmctld
           image: slurm-docker-cluster:25.05.3
+          env:
+            - name: SSH_ENABLE
+              value: "true"
           imagePullPolicy: IfNotPresent
           command:
             - sh
@@ -57,6 +65,8 @@ spec:
               /usr/local/bin/docker-entrypoint.sh slurmctld                  
           ports:
             - containerPort: 6817
+            - containerPort: 22
+          workingDir: /data
           securityContext:
             privileged: true
           volumeMounts:

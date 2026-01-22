@@ -82,20 +82,20 @@ spec:
                 - /bin/bash
                 - -c
                 - pidof slurmdbd
-            initialDelaySeconds: {{ .Values.slurmdbd.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.slurmdbd.livenessProbe.periodSeconds }}
-            timeoutSeconds: {{ .Values.slurmdbd.livenessProbe.timeoutSeconds }}
-            failureThreshold: {{ .Values.slurmdbd.livenessProbe.failureThreshold }}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           readinessProbe:
             exec:
               command:
                 - /bin/bash
                 - -c
                 - pidof slurmdbd
-            initialDelaySeconds: {{ .Values.slurmdbd.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.slurmdbd.readinessProbe.periodSeconds }}
-            timeoutSeconds: {{ .Values.slurmdbd.readinessProbe.timeoutSeconds }}
-            failureThreshold: {{ .Values.slurmdbd.readinessProbe.failureThreshold }}
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
           resources:
             requests:
               memory: {{ .Values.slurmdbd.resources.requests.memory | quote }}

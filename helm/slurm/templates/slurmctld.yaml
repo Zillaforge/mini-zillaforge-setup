@@ -81,20 +81,20 @@ spec:
                 - /bin/bash
                 - -c
                 - scontrol ping
-            initialDelaySeconds: {{ .Values.slurmctld.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.slurmctld.livenessProbe.periodSeconds }}
-            timeoutSeconds: {{ .Values.slurmctld.livenessProbe.timeoutSeconds }}
-            failureThreshold: {{ .Values.slurmctld.livenessProbe.failureThreshold }}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           readinessProbe:
             exec:
               command:
                 - /bin/bash
                 - -c
                 - scontrol ping
-            initialDelaySeconds: {{ .Values.slurmctld.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.slurmctld.readinessProbe.periodSeconds }}
-            timeoutSeconds: {{ .Values.slurmctld.readinessProbe.timeoutSeconds }}
-            failureThreshold: {{ .Values.slurmctld.readinessProbe.failureThreshold }}
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
           resources:
             requests:
               memory: {{ .Values.slurmctld.resources.requests.memory | quote }}

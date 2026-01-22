@@ -70,20 +70,20 @@ spec:
                 - /bin/bash
                 - -c
                 - test -S /var/run/slurmrestd/slurmrestd.socket
-            initialDelaySeconds: {{ .Values.slurmrestd.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.slurmrestd.livenessProbe.periodSeconds }}
-            timeoutSeconds: {{ .Values.slurmrestd.livenessProbe.timeoutSeconds }}
-            failureThreshold: {{ .Values.slurmrestd.livenessProbe.failureThreshold }}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           readinessProbe:
             exec:
               command:
                 - /bin/bash
                 - -c
                 - test -S /var/run/slurmrestd/slurmrestd.socket
-            initialDelaySeconds: {{ .Values.slurmrestd.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.slurmrestd.readinessProbe.periodSeconds }}
-            timeoutSeconds: {{ .Values.slurmrestd.readinessProbe.timeoutSeconds }}
-            failureThreshold: {{ .Values.slurmrestd.readinessProbe.failureThreshold }}
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
           resources:
             requests:
               memory: {{ .Values.slurmrestd.resources.requests.memory | quote }}

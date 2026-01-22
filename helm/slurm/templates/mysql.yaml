@@ -61,20 +61,20 @@ spec:
             - healthcheck.sh
             - --connect
             - --innodb_initialized
-          initialDelaySeconds: {{ .Values.mysql.livenessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.mysql.livenessProbe.periodSeconds }}
-          timeoutSeconds: {{ .Values.mysql.livenessProbe.timeoutSeconds }}
-          failureThreshold: {{ .Values.mysql.livenessProbe.failureThreshold }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
         readinessProbe:
           exec:
             command:
             - healthcheck.sh
             - --connect
             - --innodb_initialized
-          initialDelaySeconds: {{ .Values.mysql.readinessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.mysql.readinessProbe.periodSeconds }}
-          timeoutSeconds: {{ .Values.mysql.readinessProbe.timeoutSeconds }}
-          failureThreshold: {{ .Values.mysql.readinessProbe.failureThreshold }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
         resources:
           requests:
             memory: {{ .Values.mysql.resources.requests.memory | quote }}

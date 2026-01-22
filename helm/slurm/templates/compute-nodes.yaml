@@ -69,20 +69,20 @@ spec:
                 - /bin/bash
                 - -c
                 - pidof slurmd
-            initialDelaySeconds: {{ $.Values.computeNodes.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ $.Values.computeNodes.livenessProbe.periodSeconds }}
-            timeoutSeconds: {{ $.Values.computeNodes.livenessProbe.timeoutSeconds }}
-            failureThreshold: {{ $.Values.computeNodes.livenessProbe.failureThreshold }}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           readinessProbe:
             exec:
               command:
                 - /bin/bash
                 - -c
                 - pidof slurmd
-            initialDelaySeconds: {{ $.Values.computeNodes.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ $.Values.computeNodes.readinessProbe.periodSeconds }}
-            timeoutSeconds: {{ $.Values.computeNodes.readinessProbe.timeoutSeconds }}
-            failureThreshold: {{ $.Values.computeNodes.readinessProbe.failureThreshold }}
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
           resources:
             requests:
               memory: {{ $.Values.computeNodes.resources.requests.memory | quote }}

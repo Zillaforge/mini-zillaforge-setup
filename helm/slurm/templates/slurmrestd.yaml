@@ -29,7 +29,7 @@ spec:
         app: slurmrestd
     spec:
       initContainers:
-        - name: wait-for-slurmctld
+        - name: init-and-wait
           image: busybox:1.35
           command:
             - sh
@@ -39,15 +39,6 @@ spec:
                 echo "Waiting for slurmctld to be ready..."
                 sleep 2
               done
-          resources:
-            requests:
-              memory: "32Mi"
-              cpu: "50m"
-        - name: slurm-init
-          image: busybox:1.35
-          command:
-            - sh
-            - /scripts/slurm-init.sh
           volumeMounts:
             - name: init-script
               mountPath: /scripts

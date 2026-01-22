@@ -81,6 +81,8 @@ spec:
               readOnly: true
             - name: init-script
               mountPath: /scripts
+            - name: job-script
+              mountPath: /jobs
           livenessProbe:
             exec:
               command:
@@ -118,5 +120,9 @@ spec:
         - name: init-script
           configMap:
             name: slurm-init-script
+            defaultMode: 0755
+        - name: job-script
+          configMap:
+            name: slurm-job-script
             defaultMode: 0755
 {{- end }}

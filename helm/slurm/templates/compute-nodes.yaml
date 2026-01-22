@@ -1,6 +1,6 @@
 {{- if .Values.computeNodes.enabled }}
-{{- range .Values.computeNodes.nodes }}
-{{- $nodeName := .name }}
+{{- range $index := until (int .Values.computeNodes.count) }}
+{{- $nodeName := printf "c%d" (add $index 1) }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -19,7 +19,7 @@ metadata:
   name: slurmd-{{ $nodeName }}
   namespace: {{ $.Values.namespace.name }}
 spec:
-  replicas: {{ .replicas }}
+  replicas: 1
   selector:
     matchLabels:
       app: slurmd
@@ -47,6 +47,18 @@ spec:
             requests:
               memory: "32Mi"
               cpu: "50m"
+        - name: slurm-init
+          image: busybox:1.35
+          command:
+            - sh
+            - /scripts/slurm-init.sh
+          volumeMounts:
+            - name: init-script
+              mountPath: /scripts
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "50m"
       containers:
         - name: slurmd
           image: {{ $.Values.computeNodes.image.repository }}:{{ $.Values.computeNodes.image.tag }}
@@ -55,6 +67,7 @@ spec:
             - sh
             - -c
             - |
+              sh /scripts/slurm-init.sh
               /usr/local/bin/docker-entrypoint.sh slurmd
           ports:
             - containerPort: 6818
@@ -63,6 +76,8 @@ spec:
           volumeMounts:
             - name: jobdir
               mountPath: /data
+            - name: init-script
+              mountPath: /scripts
           livenessProbe:
             exec:
               command:
@@ -94,6 +109,10 @@ spec:
         - name: jobdir
           persistentVolumeClaim:
             claimName: slurm-jobdir-pvc
+        - name: init-script
+          configMap:
+            name: slurm-init-script
+            defaultMode: 0755
 ---
 {{- end }}
 {{- end }}

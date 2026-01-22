@@ -105,15 +105,11 @@ slurmrestd:
 # Compute nodes configuration
 computeNodes:
   enabled: true
+  count: 3
   image:
     repository: slurm-docker-cluster
     tag: "25.05.3"
     pullPolicy: IfNotPresent
-  nodes:
-    - name: c1
-      replicas: 1
-    - name: c2
-      replicas: 1
   resources:
     requests:
       memory: "256Mi"

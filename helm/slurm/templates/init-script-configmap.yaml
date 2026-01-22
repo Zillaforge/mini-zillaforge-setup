@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: slurm-init-script
+  namespace: {{ .Values.namespace.name }}
+data:
+  slurm-init.sh: |
+    #!/bin/bash
+    set -e
+    
+    # Create slurm configuration directory if it doesn't exist
+    mkdir -p /etc/slurm
+    
+    # Remove existing NodeName and PartitionName lines from slurm.conf
+    if [ -f /etc/slurm/slurm.conf ]; then
+      grep -v "^NodeName=" /etc/slurm/slurm.conf | grep -v "^PartitionName=" > /etc/slurm/slurm.conf.tmp
+      mv /etc/slurm/slurm.conf.tmp /etc/slurm/slurm.conf
+    fi
+    
+    # Append dynamic node configuration to slurm.conf
+    cat >> /etc/slurm/slurm.conf << 'EOF'
+    {{- range $index := until (int .Values.computeNodes.count) }}
+    NodeName=c{{ add $index 1 }} CPUs=2 RealMemory=1000 State=UNKNOWN
+    {{- end }}
+    PartitionName=normal Nodes={{ range $index := until (int .Values.computeNodes.count) }}{{ if ne $index 0 }},{{ end }}c{{ add $index 1 }}{{ end }} Default=YES MaxTime=INFINITE State=UP
+    EOF
+    
+    # Add initialization marker file
+    echo "SLURM initialization completed at $(date)" > /etc/slurm/init-completed
+    
+    echo "SLURM initialization script completed successfully"

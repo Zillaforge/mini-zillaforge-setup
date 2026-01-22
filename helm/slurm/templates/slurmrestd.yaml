@@ -43,6 +43,18 @@ spec:
             requests:
               memory: "32Mi"
               cpu: "50m"
+        - name: slurm-init
+          image: busybox:1.35
+          command:
+            - sh
+            - /scripts/slurm-init.sh
+          volumeMounts:
+            - name: init-script
+              mountPath: /scripts
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "50m"
       hostname: slurmrestd
       containers:
         - name: slurmrestd
@@ -52,6 +64,7 @@ spec:
             - sh
             - -c
             - |
+              sh /scripts/slurm-init.sh
               cp /tmp/jwt-pvc/jwt_hs256.key /etc/slurm/
               chown slurm:slurm /etc/slurm/jwt_hs256.key
               chmod 0600 /etc/slurm/jwt_hs256.key
@@ -64,6 +77,8 @@ spec:
             - name: jwt-pvc
               mountPath: /tmp/jwt-pvc
               readOnly: true
+            - name: init-script
+              mountPath: /scripts
           livenessProbe:
             exec:
               command:
@@ -95,4 +110,8 @@ spec:
         - name: jwt-pvc
           persistentVolumeClaim:
             claimName: jwt-pvc
+        - name: init-script
+          configMap:
+            name: slurm-init-script
+            defaultMode: 0755
 {{- end }}

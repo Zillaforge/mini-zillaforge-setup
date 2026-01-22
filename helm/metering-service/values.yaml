@@ -1,0 +1,100 @@
+app: metering-service
+
+images:
+  mts: Zillaforge/metering-service:0.6.11-ff14a82
+  debugger: Zillaforge/debugger:1.0.2
+  filebeat: Zillaforge/filebeat:8.14.3
+
+core:
+  enabled: true
+  configmap:
+    version: 0.6.4
+    kind: MeteringService
+    MeteringService:
+      instance: MeteringService
+      http_host: 0.0.0.0:8090
+      logger:
+        system_log:
+          path: /var/log/ASUS/
+          mode: error
+          max_size: 10
+          max_backups: 5
+          max_age: 10
+          compress: false
+          show_in_console: true
+      queue: []
+      dead_letter_queue_flush: true
+    s3: 
+      enable: false
+      host: http://
+      region: default
+      access: 
+      secret: 
+    message_queue:
+      # provider supported: rabbitmq
+      provider: rabbitmq
+      rabbitmq:
+        account: user
+        password: password
+        host: pegasus-cloud-rabbitmq:5672
+        manage_host: pegasus-cloud-rabbitmq:15672
+        timeout: 5
+        rpc_timeout: 10
+        vhost: "/"
+        operation_connection_num: 3
+        channel_num: 4
+        replica_num: 0
+        consumer_connection_num: 2
+    authentication:
+      # supported: myssk, myiam
+      service: myiam 
+      # supported: iam, ssk(static secret key)
+      # provider: iam
+      # iam:
+      #   hosts: 
+      #   - pegasus-cloud-iamserver:5051
+      #   tls:
+      #     enable: false
+      #     cert_path: /root/server-csr/IAM.pem
+      #   connection_per_host: 3
+    services:
+    - name: myiam
+      kind: iam
+      hosts: 
+      - pegasus-cloud-iamserver:5051
+      tls:
+        enable: false
+        cert_path: /root/server-csr/IAM.pem
+      connection_per_host: 3
+    reporters:
+      assets_path: "etc/assets"
+      templates:
+      - iservice.opstk-vm-metering
+      iservice:
+        apigw_host: https://
+        flavors: [""]
+        apigw_admin_key_in_project: 
+        apigw_admin_key_keypath: 
+
+service:
+  core:
+    enableNodePort: false
+    externalIPs: []
+    http:
+      port: 8090
+      nodePort: 32090
+
+serviceMonitor:
+  enable: false
+
+elasticSearch:
+  hosts: [""] # TODO: need update
+  index: accesslog-%{[service.name]}
+  protocol: "https"
+  pipeline: meteringservice-pipeline
+  preset: balanced
+  username: "elastic" # TODO: need update
+  password: "" # TODO: need update
+  ssl:
+    enabled: true
+    verification_mode: none

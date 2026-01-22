@@ -1,0 +1,13 @@
+apiVersion: v2
+name: slurm
+description: A Helm chart for Kubernetes SLURM deployment
+type: application
+version: 1.0.0
+appVersion: "25.05.3"
+keywords:
+  - slurm
+  - job-scheduler
+  - hpc
+maintainers:
+  - name: Zillaforge
+    email: admin@zillaforge.com

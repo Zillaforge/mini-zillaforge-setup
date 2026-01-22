@@ -1,0 +1,112 @@
+{{- if .Values.slurmctld.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: slurmctld
+  namespace: {{ .Values.namespace.name }}
+spec:
+  type: {{ .Values.slurmctld.service.type }}
+  ports:
+    - name: slurm
+      port: {{ .Values.slurmctld.service.slurmPort }}
+      targetPort: {{ .Values.slurmctld.service.slurmPort }}
+    - name: ssh
+      port: {{ .Values.slurmctld.service.sshPort }}
+      targetPort: {{ .Values.slurmctld.service.sshPort }}
+      nodePort: {{ .Values.slurmctld.service.sshNodePort }}
+  selector:
+    app: slurmctld
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: slurmctld
+  namespace: {{ .Values.namespace.name }}
+spec:
+  replicas: {{ .Values.slurmctld.replicas }}
+  selector:
+    matchLabels:
+      app: slurmctld
+  template:
+    metadata:
+      labels:
+        app: slurmctld
+    spec:
+      initContainers:
+        - name: wait-for-slurmdbd
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z slurmdbd 6819; do
+                echo "Waiting for slurmdbd to be ready..."
+                sleep 2
+              done
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "50m"
+      hostname: slurmctld
+      containers:
+        - name: slurmctld
+          image: {{ .Values.slurmctld.image.repository }}:{{ .Values.slurmctld.image.tag }}
+          imagePullPolicy: {{ .Values.slurmctld.image.pullPolicy }}
+          env:
+            - name: SSH_ENABLE
+              value: "true"
+          command:
+            - sh
+            - -c
+            - |
+              cp /tmp/jwt-pvc/jwt_hs256.key /etc/slurm/
+              chown slurm:slurm /etc/slurm/jwt_hs256.key
+              chmod 0600 /etc/slurm/jwt_hs256.key
+              /usr/local/bin/docker-entrypoint.sh slurmctld
+          ports:
+            - containerPort: {{ .Values.slurmctld.service.slurmPort }}
+            - containerPort: {{ .Values.slurmctld.service.sshPort }}
+          workingDir: /data
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: jobdir
+              mountPath: /data
+            - name: jwt-pvc
+              mountPath: /tmp/jwt-pvc
+              readOnly: true
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - scontrol ping
+            initialDelaySeconds: {{ .Values.slurmctld.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.slurmctld.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.slurmctld.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.slurmctld.livenessProbe.failureThreshold }}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - scontrol ping
+            initialDelaySeconds: {{ .Values.slurmctld.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.slurmctld.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.slurmctld.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.slurmctld.readinessProbe.failureThreshold }}
+          resources:
+            requests:
+              memory: {{ .Values.slurmctld.resources.requests.memory | quote }}
+              cpu: {{ .Values.slurmctld.resources.requests.cpu | quote }}
+            limits:
+              memory: {{ .Values.slurmctld.resources.limits.memory | quote }}
+              cpu: {{ .Values.slurmctld.resources.limits.cpu | quote }}
+      volumes:
+        - name: jobdir
+          persistentVolumeClaim:
+            claimName: slurm-jobdir-pvc
+        - name: jwt-pvc
+          persistentVolumeClaim:
+            claimName: jwt-pvc
+{{- end }}

@@ -1,0 +1,99 @@
+{{- if .Values.computeNodes.enabled }}
+{{- range .Values.computeNodes.nodes }}
+{{- $nodeName := .name }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $nodeName }}
+  namespace: {{ $.Values.namespace.name }}
+spec:
+  ports:
+    - port: 6818
+      targetPort: 6818
+  selector:
+    node: {{ $nodeName }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: slurmd-{{ $nodeName }}
+  namespace: {{ $.Values.namespace.name }}
+spec:
+  replicas: {{ .replicas }}
+  selector:
+    matchLabels:
+      app: slurmd
+      node: {{ $nodeName }}
+  template:
+    metadata:
+      labels:
+        app: slurmd
+        node: {{ $nodeName }}
+    spec:
+      hostname: {{ $nodeName }}
+      subdomain: compute-nodes
+      initContainers:
+        - name: wait-for-slurmctld
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z slurmctld 6817; do
+                echo "Waiting for slurmctld to be ready..."
+                sleep 2
+              done
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "50m"
+      containers:
+        - name: slurmd
+          image: {{ $.Values.computeNodes.image.repository }}:{{ $.Values.computeNodes.image.tag }}
+          imagePullPolicy: {{ $.Values.computeNodes.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              /usr/local/bin/docker-entrypoint.sh slurmd
+          ports:
+            - containerPort: 6818
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: jobdir
+              mountPath: /data
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - pidof slurmd
+            initialDelaySeconds: {{ $.Values.computeNodes.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ $.Values.computeNodes.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ $.Values.computeNodes.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ $.Values.computeNodes.livenessProbe.failureThreshold }}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - pidof slurmd
+            initialDelaySeconds: {{ $.Values.computeNodes.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ $.Values.computeNodes.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ $.Values.computeNodes.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ $.Values.computeNodes.readinessProbe.failureThreshold }}
+          resources:
+            requests:
+              memory: {{ $.Values.computeNodes.resources.requests.memory | quote }}
+              cpu: {{ $.Values.computeNodes.resources.requests.cpu | quote }}
+            limits:
+              memory: {{ $.Values.computeNodes.resources.limits.memory | quote }}
+              cpu: {{ $.Values.computeNodes.resources.limits.cpu | quote }}
+      volumes:
+        - name: jobdir
+          persistentVolumeClaim:
+            claimName: slurm-jobdir-pvc
+---
+{{- end }}
+{{- end }}

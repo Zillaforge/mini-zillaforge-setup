@@ -1,0 +1,89 @@
+{{- if .Values.mysql.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: {{ .Values.namespace.name }}
+spec:
+  ports:
+    - port: {{ .Values.mysql.service.port }}
+      targetPort: {{ .Values.mysql.service.port }}
+  selector:
+    app: mysql
+  type: {{ .Values.mysql.service.type }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: {{ .Values.namespace.name }}
+spec:
+  serviceName: mysql
+  replicas: {{ .Values.mysql.replicas }}
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: {{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}
+        imagePullPolicy: {{ .Values.mysql.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.mysql.service.port }}
+        env:
+        - name: MYSQL_RANDOM_ROOT_PASSWORD
+          value: "yes"
+        - name: MYSQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: slurm-credentials
+              key: MYSQL_DATABASE
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: slurm-credentials
+              key: MYSQL_USER
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: slurm-credentials
+              key: MYSQL_PASSWORD
+        volumeMounts:
+        - name: mysql-storage
+          mountPath: /var/lib/mysql
+        livenessProbe:
+          exec:
+            command:
+            - healthcheck.sh
+            - --connect
+            - --innodb_initialized
+          initialDelaySeconds: {{ .Values.mysql.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.mysql.livenessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.mysql.livenessProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.mysql.livenessProbe.failureThreshold }}
+        readinessProbe:
+          exec:
+            command:
+            - healthcheck.sh
+            - --connect
+            - --innodb_initialized
+          initialDelaySeconds: {{ .Values.mysql.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.mysql.readinessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.mysql.readinessProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.mysql.readinessProbe.failureThreshold }}
+        resources:
+          requests:
+            memory: {{ .Values.mysql.resources.requests.memory | quote }}
+            cpu: {{ .Values.mysql.resources.requests.cpu | quote }}
+          limits:
+            memory: {{ .Values.mysql.resources.limits.memory | quote }}
+            cpu: {{ .Values.mysql.resources.limits.cpu | quote }}
+      volumes:
+      - name: mysql-storage
+        persistentVolumeClaim:
+          claimName: mysql-storage-pvc
+{{- end }}

@@ -1,0 +1,98 @@
+{{- if .Values.slurmrestd.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: slurmrestd
+  namespace: {{ .Values.namespace.name }}
+spec:
+  type: {{ .Values.slurmrestd.service.type }}
+  ports:
+    - port: {{ .Values.slurmrestd.service.port }}
+      targetPort: {{ .Values.slurmrestd.service.port }}
+      nodePort: {{ .Values.slurmrestd.service.nodePort }}
+  selector:
+    app: slurmrestd
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: slurmrestd
+  namespace: {{ .Values.namespace.name }}
+spec:
+  replicas: {{ .Values.slurmrestd.replicas }}
+  selector:
+    matchLabels:
+      app: slurmrestd
+  template:
+    metadata:
+      labels:
+        app: slurmrestd
+    spec:
+      initContainers:
+        - name: wait-for-slurmctld
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z slurmctld 6817; do
+                echo "Waiting for slurmctld to be ready..."
+                sleep 2
+              done
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "50m"
+      hostname: slurmrestd
+      containers:
+        - name: slurmrestd
+          image: {{ .Values.slurmrestd.image.repository }}:{{ .Values.slurmrestd.image.tag }}
+          imagePullPolicy: {{ .Values.slurmrestd.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              cp /tmp/jwt-pvc/jwt_hs256.key /etc/slurm/
+              chown slurm:slurm /etc/slurm/jwt_hs256.key
+              chmod 0600 /etc/slurm/jwt_hs256.key
+              /usr/local/bin/docker-entrypoint.sh slurmrestd
+          ports:
+            - containerPort: {{ .Values.slurmrestd.service.port }}
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: jwt-pvc
+              mountPath: /tmp/jwt-pvc
+              readOnly: true
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - test -S /var/run/slurmrestd/slurmrestd.socket
+            initialDelaySeconds: {{ .Values.slurmrestd.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.slurmrestd.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.slurmrestd.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.slurmrestd.livenessProbe.failureThreshold }}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - test -S /var/run/slurmrestd/slurmrestd.socket
+            initialDelaySeconds: {{ .Values.slurmrestd.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.slurmrestd.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.slurmrestd.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.slurmrestd.readinessProbe.failureThreshold }}
+          resources:
+            requests:
+              memory: {{ .Values.slurmrestd.resources.requests.memory | quote }}
+              cpu: {{ .Values.slurmrestd.resources.requests.cpu | quote }}
+            limits:
+              memory: {{ .Values.slurmrestd.resources.limits.memory | quote }}
+              cpu: {{ .Values.slurmrestd.resources.limits.cpu | quote }}
+      volumes:
+        - name: jwt-pvc
+          persistentVolumeClaim:
+            claimName: jwt-pvc
+{{- end }}

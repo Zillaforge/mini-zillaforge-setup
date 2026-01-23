@@ -1,0 +1,198 @@
+app: container-registry-management
+images:
+  containerregistrymanagement: Zillaforge/container-registry-management:0.1.3-42690f69
+  debugger: Zillaforge/debugger:1.0.2
+  filebeat: elastic/filebeat:8.14.3
+core:
+  enabled: true
+  configmap:
+    version: 0.1.3-42690f69
+    kind: ContainerRegistryManagement
+    containerregistrymanagement:
+      instance: ContainerRegistryManagement
+      developer: true
+      grpc:
+        host: 0.0.0.0:5107
+        unix_socket:
+          path: /run/ContainerRegistryManagement.sock
+          conn_count: 20
+        # write_buffer_size: 32768
+        # read_buffer_size: 32768
+        # max_receive_message_size: 4194304
+        # max_send_message_size: 2147483647
+      http:
+        host: 0.0.0.0:8107
+        # access_control:
+          # allow_origins: ["*"]
+          # allow_credentials: true
+          # allow_headers: ["Origin", "Content-Length", "Content-Type", "Authorization"]
+          # allow_methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
+          # expose_headers: ["host-id", "version-id", "location-id"]
+      logger:
+        system_log:
+          path: /var/log/ASUS
+          max_size: 10
+          max_backups: 5
+          max_age: 10
+          compress: false
+          mode: debug
+          show_in_console: true
+        access_log:
+          path: /var/log/ASUS
+          max_size: 10
+          max_backups: 5
+          max_age: 10
+          compress: false
+      tls:
+        enable: false
+        cert_path: tls/afs/pegasus-crm.pem
+        key_path: tls/afs/pegasus-crm-key.pem
+      tracer:
+        enable: false
+        host: http://pegasus-cloud-jaeger:14268/api/traces
+        timeout: 10
+      scopes:
+        default_registry_storage_limit: 10737418240
+        availability_district: "default"
+    services:
+      - name: myiam
+        kind: iam
+        hosts:
+          - iam-service:5051
+        tls:
+          enable: false
+          cert_path: /root/server-csr/IAM.pem
+        connection_per_host: 3
+      - name: my_redis_sentinel
+        kind: redis_sentinel
+        hosts:
+        - redis-sentinel-service:26379
+        password: password
+        master_group_name: mymaster
+    authentication:
+      service: myiam
+    image_registry:
+      provider: harbor
+      harbor:
+        host: http://harbor.hostip.nip.io
+        timeout_sec: 5
+        username: admin
+        password: password
+    event_consume:
+      # service 輸入指定的 Service Name 或 empty(不啟動) 
+      service: my_redis_sentinel
+      redis_sentinel:
+        channels:
+        - FromIAM
+
+proxy:
+  enabled: true
+  configmap:
+    version: 0.1.0
+    kind: Proxy
+    proxy:
+      instance: ContainerRegistryManagement-Proxy
+      developer: true
+      http:
+        host: 0.0.0.0:8107
+        # access_control:
+          # allow_origins: ["*"]
+          # allow_credentials: true
+          # allow_headers: ["Origin", "Content-Length", "Content-Type", "Authorization"]
+          # allow_methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
+          # expose_headers: ["host-id", "version-id", "location-id"]
+      logger:
+        system_log:
+          path: log/
+          max_size: 10
+          max_backups: 5
+          max_age: 10
+          compress: false
+          mode: debug
+          show_in_console: true
+      tracer:
+        enable: false
+        host: http://pegasus-cloud-jaeger:14268/api/traces
+        timeout: 10
+      mode: rw #supported: ro, rw
+      scopes:
+        # external_domain 主要提供外部存取 CRM Proxy 使用，也可以是 IP + Port 如 http://192.168.88.166:8107
+        # 預設為：http://pegasus-cloud-crmserver:8107
+        external_domain: http://pegasus-cloud-crmserver:8107 ###
+    image_registry:
+      provider: harbor
+      harbor:
+        host: http://harbor.hostip.nip.io
+        timeout_sec: 5
+        username: admin
+        password: password
+
+jobScheduler:
+  enabled: true
+  configmap:
+    version: 0.1.0
+    kind: JobScheduler
+    jobscheduler:
+      instance: ContainerRegistryManagement-JobScheduler
+      logger:
+        system_log:
+          path: log/
+          max_size: 10
+          max_backups: 5
+          max_age: 10
+          compress: false
+          mode: debug
+          show_in_console: true
+      containerregistrymanagement:
+        grpc_hosts: [ "pegasus-cloud-crmserver:5107" ]
+        connection_per_host: 3
+      tasks:
+        sync_projects:
+          cron_expression: "0 */10 * * * * *"
+        sync_image_registry_group:
+          cron_expression: "0 */11 * * * * *"
+        size_hard_limited_exceed:
+          cron_expression: "0 */10 * * * * *"
+        size_metering:
+          cron_expression: "0 0 */1 * * * *"
+          metering_service:
+            exchange: mts
+            routing_key: "crm-image-size"
+    services:
+    - name: myiam
+      kind: iam
+      hosts:
+        - iam-service:5051
+      tls:
+        enable: false
+        cert_path: /root/server-csr/IAM.pem
+      connection_per_host: 3
+
+service:
+  core:
+    enableNodePort: true
+    externalIPs: []
+    grpc:
+      port: 5107
+      nodePort: 31107
+    http:
+      port: 8107
+      nodePort: 32107
+  proxy:
+    enableNodePort: true
+    externalIPs: []
+    http:
+      port: 8107
+      nodePort: 32117
+
+elasticSearch:
+  hosts: ["http://elasticsearch-es-http.elastic-stack.svc.cluster.local:9200"]
+  index: accesslog-%{[service.auditLogName]}
+#   protocol: "https"
+  pipeline: pipeline-%{[service.auditLogName]}
+#   preset: balanced
+  username: "elastic"
+  password: "password"
+#   ssl:
+#     enabled: false
+#     verification_mode: none

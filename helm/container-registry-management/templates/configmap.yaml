@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.app }}-config
+data:
+  container-registry-management.yaml: |
+{{- toYaml .Values.core.configmap | nindent 4 }}
+  proxy.yaml: |
+{{- toYaml .Values.proxy.configmap | nindent 4 }}
+  job-scheduler.yaml: |
+{{- toYaml .Values.jobScheduler.configmap | nindent 4 }}

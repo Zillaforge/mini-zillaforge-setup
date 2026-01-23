@@ -1,0 +1,14 @@
+app: file-storage
+
+service:
+  externalIPs: []
+  enableNodePort: true
+  ports:
+    ftp:
+      port: 21
+      nodePort: 32121
+      passiveMin: 30200
+      passiveMax: 30300 
+    sftp:
+      port: 22
+      nodePort: 32122

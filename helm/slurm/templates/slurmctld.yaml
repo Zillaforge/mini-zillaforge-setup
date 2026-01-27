@@ -136,7 +136,7 @@ spec:
             secretName: slurm-credentials
             items:
               - key: SSH_PUBLIC_KEY
-                path: id_rsa.pub
+                path: authorized_keys
                 mode: 0400
 {{- end }}
 {{- end }}

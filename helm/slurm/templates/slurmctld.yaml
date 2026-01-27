@@ -85,7 +85,8 @@ spec:
               mountPath: /jobs
 {{- if .Values.secrets.sshPublicKey }}
             - name: ssh-public-key
-              mountPath: /root/.ssh
+              mountPath: /root/.ssh/authorized_keys
+              subPath: authorized_keys 
               readOnly: true
 {{- end }}
           livenessProbe:

@@ -1,6 +1,3 @@
 [submodule "openstack-deploy"]
 	path = openstack-deploy
 	url = https://github.com/Zillaforge/openstack-deploy.git
-[submodule "slurm-installer/slurm-docker-cluster"]
-	path = slurm-installer/slurm-docker-cluster
-	url = https://github.com/ogre0403/slurm-docker-cluster.git

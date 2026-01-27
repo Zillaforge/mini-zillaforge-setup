@@ -80,7 +80,8 @@ sudo systemctl daemon-reload
 sudo systemctl restart docker
 systemctl status --no-pager docker
 
-
+## Install docker plugin
+sudo apt-get install  -y docker-buildx-plugin docker-compose-plugin
 
 # Essential Tweaks
 sudo swapoff -a
@@ -173,8 +174,15 @@ done
 
 echo "All builds completed successfully!"
 
+## build and save slurm image
+cd /tmp
+git clone https://github.com/ogre0403/slurm-docker-cluster.git
+cd slurm-docker-cluster
+sudo make build
+
+
 # Clean up base images
-base_images=("kong-plugin-base" "ubuntu" "nginx" "alpine" "busybox" "node")
+base_images=("kong-plugin-base" "ubuntu" "nginx" "alpine" "busybox" "node" "rockylinux/rockylinux")
 
 echo "Cleaning up base images..."
 
@@ -196,7 +204,7 @@ echo "Base image cleanup completed!"
 echo "💾 Saving Zillaforge images as tar files..."
 cd /tmp
 
-sudo docker images --format "{{.Repository}}:{{.Tag}}" | grep "^Zillaforge/" | grep -v "Zillaforge/golang" | while read image_tag; do
+sudo docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "^(Zillaforge/|slurm-docker-cluster)" | grep -v "Zillaforge/golang" | while read image_tag; do
     repo_name=$(echo "$image_tag" | cut -d'/' -f2 | cut -d':' -f1)
     tag_name=$(echo "$image_tag" | cut -d':' -f2)
     filename="${repo_name}_${tag_name}.tar"

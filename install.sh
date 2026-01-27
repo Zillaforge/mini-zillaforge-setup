@@ -60,6 +60,11 @@ kubectl patch service traefik -n kube-system \
 
 echo "✅ Traefik service patched with NodePort 31111 and 32222"
 
+# Install Slurm Cluster
+echo "Install Slurm cluster..."
+helm install slurm ./helm/slurm
+
+
 # Install message queue
 echo "🐰 Installing RabbitMQ..."
 helm install rabbitmq oci://registry-1.docker.io/bitnamicharts/rabbitmq -f ./helm/rabbit_values.yaml --set image.repository=bitnamilegacy/rabbitmq --set global.security.allowInsecureImages=true

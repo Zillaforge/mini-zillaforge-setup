@@ -75,6 +75,11 @@ kubectl delete -f https://download.elastic.co/downloads/eck/3.2.0/operator.yaml 
 
 echo "✅ ElasticSearch removed"
 
+# Remove Slurm Cluster
+echo "🗑️ Removing Slurm Cluster..."
+helm delete slurm
+echo "✅ Slurm Cluster removed"
+
 set -e  # Re-enable exit on error
 
 # Remove ingress resources

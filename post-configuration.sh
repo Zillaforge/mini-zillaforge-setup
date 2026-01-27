@@ -67,7 +67,7 @@ echo "OpenStack Project UUID: $OP_PROJECT_UUID"
 # echo "OpenStack Image ID: $OP_IMAGE_ID"
 
 ## manila setup
-
+set +e
 # create flavor for manila service instance
 # flavor id MUST match `service_instance_flavor_id` in manila-share.conf
 openstack flavor create "manila-service-flavor" \
@@ -89,7 +89,7 @@ openstack image create "manila-service-image" \
 # create manila share type
 echo "Create manila share type and enable DHSS mode"
 openstack share type create default_share_type True
-
+set -e
 
 # deactivate
 

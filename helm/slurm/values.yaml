@@ -22,6 +22,7 @@ secrets:
   mysqlDatabase: slurm_acct_db
   mysqlUser: slurm
   mysqlPassword: password
+  sshPublicKey: "" # SSH public key from host, can be loaded from ~/.ssh/id_rsa.pub
 
 # MySQL/MariaDB configuration
 mysql:

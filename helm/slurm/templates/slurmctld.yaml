@@ -83,6 +83,11 @@ spec:
               mountPath: /scripts
             - name: job-script
               mountPath: /jobs
+{{- if .Values.secrets.sshPublicKey }}
+            - name: ssh-public-key
+              mountPath: /root/.ssh
+              readOnly: true
+{{- end }}
           livenessProbe:
             exec:
               command:
@@ -125,4 +130,13 @@ spec:
           configMap:
             name: slurm-job-script
             defaultMode: 0755
+{{- if .Values.secrets.sshPublicKey }}
+        - name: ssh-public-key
+          secret:
+            secretName: slurm-credentials
+            items:
+              - key: SSH_PUBLIC_KEY
+                path: id_rsa.pub
+                mode: 0400
+{{- end }}
 {{- end }}

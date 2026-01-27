@@ -63,6 +63,7 @@ echo "✅ Traefik service patched with NodePort 31111 and 32222"
 # Install Slurm Cluster
 echo "Install Slurm cluster..."
 # generate SSH key under ubuntu user
+rm -f ~/.ssh/id_ed25519 ~/.ssh/id_ed25519.pub
 ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -q
 helm install slurm ./helm/slurm -f ./helm/slurm/values-trustedcloud.yaml --set secrets.sshPublicKey="$(cat $HOME/.ssh/id_ed25519.pub)"
 echo "waiting for Slurm cluster to be ready..."

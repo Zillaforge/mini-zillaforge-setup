@@ -1,13 +1,13 @@
 app: data-exchange-service-fs-rw
 
 images:
-  filestorage: Zillaforge/file-storage:0.1.3-94424e0
+  filestorage: Zillaforge/file-storage:0.1.3
   eventpublishPlugin: Zillaforge/event-publish-plugin:0.1.2
   debugger: Zillaforge/debugger:1.0.2
   filebeat: elastic/filebeat:8.14.3
 
 configmap:
-  version: 0.1.3-94424e0
+  version: 0.1.3
   kind: FileStorage
   filestorage:
     instance: Data-Exchange-Service(FS-RW)

@@ -6,7 +6,7 @@ core:
 proxy:
   enabled: true
   configmap:
-    version: 0.1.3-42690f69
+    version: 0.1.3
     kind: Proxy
     containerregistrymanagement:
       scopes:

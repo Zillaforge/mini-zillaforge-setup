@@ -1,7 +1,7 @@
 app: metering-service
 
 images:
-  mts: Zillaforge/metering-service:0.6.11-ff14a82
+  mts: Zillaforge/metering-service:0.6.11
   debugger: Zillaforge/debugger:1.0.2
   filebeat: docker.io/elastic/filebeat:8.14.3
 

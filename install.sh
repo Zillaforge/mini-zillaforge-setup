@@ -305,12 +305,12 @@ kubectl wait --for=condition=available deployment/app-playground-service-core-de
 
 echo "✅ APS installed"
 
-
+#MTS
 
 helm install mts ./helm/metering-service -f ./helm/metering-service/values-trustedcloud.yaml 
 echo "✅ MTS  installed"
 
-
+#FS
 echo "waiting for File Storge CS-system deployments to be ready..."
 helm install desfs ./helm/cloud-storage -f ./helm/cloud-storage/values-des-cs-rw.yaml 
 kubectl wait --for=condition=available deployment/data-exchange-service-fs-rw-deployment --timeout=1200s
@@ -319,11 +319,21 @@ echo "install File Storge core"
 helm install descsrw ./helm/metering-service -f ./helm/metering-service/values-trustedcloud.yaml 
 echo "✅ DES  installed"
 
+#Harbor
+kubectl exec test-postgresql-postgresql-ha-postgresql-0 -- \
+  env PGPASSWORD=password \
+  psql -h localhost -U postgresqlusername -d postgres \
+  -c "CREATE DATABASE forharbor;"
+#Create a PostgreSQL database for Harbor.
+
+
+
 echo "waiting for Harbor deployments to be ready..."
 helm install harbor ./helm/harbor -f ./helm/harbor/values-trustedcloud.yaml 
 kubectl wait --for=condition=available deployment/harbor-core --timeout=1200s
 echo "✅ Harbor  installed"
 
+# CRM
 echo "waiting for CRM deployments to be ready..."
 helm install crm ./helm/container-registry-management -f ./helm/container-registry-management/values-crm-core.yaml 
 kubectl wait --for=condition=available deployment/container-registry-management-core-deployment --timeout=1200s

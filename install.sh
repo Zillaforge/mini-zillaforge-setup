@@ -134,7 +134,7 @@ kubectl wait --for=condition=available deployment/iam-deployment --timeout=1200s
 
 echo "Installing LDAP OpenStack integration..."
 helm install ldap-opsk ./helm/ldap -f ./helm/ldap/values-openstack.yaml
-
+helm install ldap-iam ./helm/ldap -f ./helm/ldap/values-iam.yaml
 echo "waiting for LDAP deployments to be ready..."
 kubectl wait --for=condition=available deployment/ldap-service-openstack-deployment --timeout=1200s
 
@@ -330,6 +330,8 @@ kubectl exec test-postgresql-postgresql-ha-postgresql-0 -- \
 
 echo "waiting for Harbor deployments to be ready..."
 helm install harbor ./helm/harbor -f ./helm/harbor/values-trustedcloud.yaml 
+kubectl exec test-postgresql-postgresql-ha-postgresql-0 --   env PGPASSWORD=password   psql -h localhost -U postgresqlusername -d forharbor   -c "UPDATE schema_migrations SET dirty = false WHERE version = 120;
+"
 kubectl wait --for=condition=available deployment/harbor-core --timeout=1200s
 echo "✅ Harbor  installed"
 

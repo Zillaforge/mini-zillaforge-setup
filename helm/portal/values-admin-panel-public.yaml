@@ -8,10 +8,10 @@ environments:
   ENDPOINT_SITE_STORAGE:
   ENDPOINT_DOCS:
   ENDPOINT_GRAFANA:
-  ENDPOINT_KIBANA:
+  ENDPOINT_KIBANA: http://kibana.hostip.nip.io
   ENDPOINT_CEPH:
   ENDPOINT_OPENSTACK: #
-  IMAGE_REGISTRY:   #
+  IMAGE_REGISTRY:  http://crm.hostip.nip.io #
   USER_PORTAL:  http://www.hostip.nip.io #nip 
   ENDPOINT_DOCS:   #
 service:

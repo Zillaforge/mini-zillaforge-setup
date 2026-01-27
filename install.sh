@@ -62,7 +62,7 @@ echo "✅ Traefik service patched with NodePort 31111 and 32222"
 
 # Install Slurm Cluster
 echo "Install Slurm cluster..."
-helm install slurm ./helm/slurm
+helm install slurm ./helm/slurm -f ./helm/slurm/values-trustedcloud.yaml
 echo "waiting for Slurm cluster to be ready..."
 kubectl wait --for=condition=available deployment/slurmrestd --timeout=1200s
 

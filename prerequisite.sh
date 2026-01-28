@@ -143,7 +143,7 @@ cd /tmp
 sudo rm -rf utility-image-builder
 
 # Build service repositories
-repos=("ldapservice" "pegasusiam" "virtualregistrymanagement" "virtualplatformservice" "cloudstorage" "appplaygroundservice" "kongauthplugin" "eventpublishplugin" "kongresponsetransformerplugin" "adminpanel" "userportal" "audittrackservice" "meteringservice" "filestorage")
+repos=("ldapservice" "pegasusiam" "virtualregistrymanagement" "virtualplatformservice" "cloudstorage" "appplaygroundservice" "kongauthplugin" "eventpublishplugin" "kongresponsetransformerplugin" "adminpanel" "userportal" "audittrackservice" "meteringservice" "filestorage" "containerregistrymanagement")
 
 echo "Starting to build service repositories..."
 

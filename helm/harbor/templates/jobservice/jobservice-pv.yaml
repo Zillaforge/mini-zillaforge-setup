@@ -1,0 +1,31 @@
+{{- if .Values.persistence.enabled }}
+{{- $jobLog := .Values.persistence.persistentVolumeClaim.jobservice.jobLog -}}
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: {{ template "harbor.jobservice" . }}-pv
+  annotations:
+  {{- range $key, $value := $jobLog.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- if eq .Values.persistence.resourcePolicy "keep" }}
+    helm.sh/resource-policy: keep
+  {{- end }}
+  labels:
+{{ include "harbor.labels" . | indent 4 }}
+    component: jobservice
+spec:
+  storageClassName: {{ template "harbor.jobservice" . }}-volume
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: {{ .Values.nodeAffinityPreset.key}}
+          operator: Exists
+  capacity:
+    storage: {{ $jobLog.size | quote }}
+  accessModes: 
+    - {{ $jobLog.accessMode }}
+  local:
+    path: {{ $jobLog.sharePath }}
+{{- end }}

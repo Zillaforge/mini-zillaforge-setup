@@ -17,6 +17,8 @@ sudo mkdir -p /trusted-cloud/normal/storage
 sudo mkdir -p /trusted-cloud/sensitivity/storage
 sudo mkdir -p /trusted-cloud/sensitivity/release
 sudo mkdir -p /trusted-cloud/sensitivity/exchange_public
+sudo mkdir -p /trusted-cloud/normal/services/harbor/registry
+sudo mkdir -p /trusted-cloud/normal/services/harbor/harbor-jobservice
 sudo chmod -R 775 /trusted-cloud
 
 echo "✅ Directories created"
@@ -35,6 +37,7 @@ echo "📝 Updating configuration files with hostname..."
 sed -i "s/instance-hx9bq8/$HOSTNAME/g" ./helm/mariadb-galera/values-trustedcloud.yaml
 sed -i "s/instance-hx9bq8/$HOSTNAME/g" ./helm/postgresql/values-trustedcloud.yaml
 sed -i "s/instance-hx9bq8/$HOSTNAME/g" ./helm/redis-sentinel/values-trustedcloud.yaml
+sed -i "s/instance-hx9bq8/$HOSTNAME/g" ./helm/harbor/values-trustedcloud.yaml
 
 # Update configuration files with IP
 echo "📝 Updating configuration files with IP..."
@@ -49,6 +52,12 @@ sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/ingress/ssscloudstorage.yaml
 sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/ingress/cloudstorage.yaml
 sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/cloud-storage/values-dss-public.yaml
 sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/ingress/dataexchange.yaml
+sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/cloud-storage/values-des-cs-rw.yaml
+sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/container-registry-management/values-crm-rw-proxy.yaml
+sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/container-registry-management/values.yaml
+sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/harbor/values-trustedcloud.yaml
+sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/ingress/crm.yaml
+sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/ingress/harborportal.yaml
 
 echo "✅ Configuration files updated"
 
@@ -125,7 +134,7 @@ kubectl wait --for=condition=available deployment/iam-deployment --timeout=1200s
 
 echo "Installing LDAP OpenStack integration..."
 helm install ldap-opsk ./helm/ldap -f ./helm/ldap/values-openstack.yaml
-
+helm install ldap-iam ./helm/ldap -f ./helm/ldap/values-iam.yaml
 echo "waiting for LDAP deployments to be ready..."
 kubectl wait --for=condition=available deployment/ldap-service-openstack-deployment --timeout=1200s
 
@@ -309,6 +318,46 @@ kubectl wait --for=condition=available deployment/data-exchange-service-fs-rw-de
 echo "install File Storge core"
 helm install descsrw ./helm/file-storage -f ./helm/file-storage/values-des-fs-rw.yaml
 echo "✅ File Storge  installed"
+
+#Harbor
+kubectl exec test-postgresql-postgresql-ha-postgresql-0 -- \
+  env PGPASSWORD=password \
+  psql -h localhost -U postgresqlusername -d postgres \
+  -c "CREATE DATABASE forharbor;"
+#Create a PostgreSQL database for Harbor.
+
+echo "waiting for Harbor deployments to be ready..."
+helm install harbor ./helm/harbor -f ./helm/harbor/values-trustedcloud.yaml 
+kubectl wait --for=condition=available deployment/harbor-core --timeout=30s
+
+# 檢查 schema_migrations 是否存在
+EXISTS=$(kubectl exec test-postgresql-postgresql-ha-postgresql-0 -- \
+  env PGPASSWORD=password \
+  psql -h localhost -U postgresqlusername -d forharbor -tAc "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='schema_migrations');")
+
+if [[ "$EXISTS" == "t" ]]; then
+    # 檢查是否有 dirty migration
+    DIRTY=$(kubectl exec test-postgresql-postgresql-ha-postgresql-0 -- \
+      env PGPASSWORD=password \
+      psql -h localhost -U postgresqlusername -d forharbor -tAc "SELECT count(*) FROM schema_migrations WHERE dirty = true;")
+    
+    if [[ "$DIRTY" -gt 0 ]]; then
+        echo "修復 dirty migration..."
+        kubectl exec test-postgresql-postgresql-ha-postgresql-0 -- \
+          env PGPASSWORD=password \
+          psql -h localhost -U postgresqlusername -d forharbor -c "UPDATE schema_migrations SET dirty = false WHERE dirty = true;"
+    fi
+fi
+
+echo "✅ Harbor  installed"
+
+# CRM
+echo "waiting for CRM deployments to be ready..."
+helm install crm ./helm/container-registry-management -f ./helm/container-registry-management/values-crm-core.yaml 
+kubectl wait --for=condition=available deployment/container-registry-management-core-deployment --timeout=1200s
+helm install crm-rw ./helm/container-registry-management -f ./helm/container-registry-management/values-crm-rw-proxy.yaml
+kubectl wait --for=condition=available deployment/container-registry-management-rw-proxy-deployment --timeout=1200s
+echo "✅ CRM  installed"
 
 echo "=========================================="
 echo "Zillaforge Installation completed successfully!"

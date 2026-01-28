@@ -1,0 +1,98 @@
+nodeAffinityPreset:
+  type: "hard"
+  key: "kubernetes.io/hostname"
+  values:
+    - node1
+    # - node2
+    # - node3
+    - instance-hx9bq8
+
+expose:
+  type: clusterIP
+  tls:
+    enabled: false
+  nodePort:
+    ports:
+      http:
+        port: 80
+        nodePort: 30795
+      https:
+        port: 443
+        nodePort: 30794
+
+persistence:
+  resourcePolicy: ""
+  persistentVolumeClaim:
+    registry:
+      existingClaim: "harbor-registry-pvc"
+      sharePath: "/trusted-cloud/normal/services/harbor/registry"
+      size: 5Gi
+    jobservice:
+      jobLog:
+        existingClaim: "harbor-jobservice-pvc"
+        sharePath: "/trusted-cloud/normal/services/harbor/harbor-jobservice"
+        size: 1Gi
+core:
+  image:
+    repository: bitnamilegacy/harbor-core
+    tag: 2.10.2-debian-12-r3
+jobservice:
+  image:
+    repository: bitnamilegacy/harbor-jobservice
+    tag: 2.10.2-debian-12-r3
+portal:
+  image:
+    repository: bitnamilegacy/harbor-portal
+    tag: 2.10.2-debian-12-r3
+registry:
+  relativeurls: true
+  controller:
+    image:
+      repository: bitnamilegacy/harbor-registryctl
+      tag: 2.10.2-debian-12-r3
+  registry:
+    image:
+      repository: goharbor/registry-photon 
+      tag: v2.10.0
+nginx:
+  image:
+    repository: goharbor/nginx-photon
+    tag: v2.10.0
+
+harborAdminPassword: "password"
+externalURL: "http://harbor.hostip.nip.io"
+trivy:
+  enabled: false
+
+database:
+  type: external
+  external:
+    host: "test-postgresql-postgresql-ha-pgpool"
+    port: "5432"
+    username: "postgresqlusername"
+    password: "password"
+    coreDatabase: "forharbor"
+redis:
+  type: external
+  external:
+    addr: redis-sentinel-service:26379
+    sentinelMasterSet: mymaster
+    password: "password"
+
+ldap:
+  enabled: true
+  values:
+    auth_mode: ldap_auth
+    ldap_base_dn: "ou=users,dc=cloud-infra,dc=asus,dc=com,dc=tw"
+    ldap_filter: "objectClass=iamUsers"
+    ldap_group_admin_dn: "cn=14735dfa-5553-46cc-b4bd-405e711b223f,ou=projects,dc=cloud-infra,dc=asus,dc=com,dc=tw"
+    ldap_group_attribute_name: "cn"
+    ldap_group_base_dn: "dc=cloud-infra,dc=asus,dc=com,dc=tw"
+    ldap_group_membership_attribute: "projectDN"
+    ldap_group_search_filter: "objectClass=iamProjects"
+    ldap_search_dn: "cn=system@ci.asus.com,ou=users,dc=cloud-infra,dc=asus,dc=com,dc=tw"
+    ldap_uid: "cn"
+    ldap_url: "ldap-service-iam-service:3891"
+    ldap_search_password: "system"
+    ldap_verify_cert: false
+    

@@ -8,7 +8,7 @@ environments:
   DATA_STORAGE: http://storage.hostip.nip.io
   DATA_EXCHANGE: http://exchange.hostip.nip.io
   DATA_RELEASE: 
-  IMAGE_REGISTRY: 
+  IMAGE_REGISTRY: http://crm.hostip.nip.io
   ADMIN_PANEL: http://admin.hostip.nip.io
   DOCUMENT_URL: 
 service:

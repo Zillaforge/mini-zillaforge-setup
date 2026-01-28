@@ -15,4 +15,14 @@ spec:
             service: 
               name: data-exchange-service-cs-rw-service
               port:
-                number: 8107
+                number: 8080
+  - host: '*.exchange.hostip.nip.io'
+    http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service: 
+              name: data-exchange-service-cs-rw-service
+              port:
+                number: 8080

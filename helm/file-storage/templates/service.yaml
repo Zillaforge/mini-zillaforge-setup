@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.app }}-service
+  labels:
+    app: {{ .Values.app }}
+    type: service
+spec:
+  {{- if eq .Values.service.enableNodePort true }}
+  type: NodePort
+  {{- end }}
+  {{- if .Values.service.externalIPs }}
+  externalIPs: {{ .Values.service.externalIPs }}
+  {{- end }}
+  selector:
+    app: {{ .Values.app }}
+  ports:
+    - name: {{ .Values.app }}-ftp-port
+      port: {{ .Values.service.ports.ftp.port }}
+      targetPort: {{ .Values.service.ports.ftp.port }}
+      {{- if eq .Values.service.enableNodePort true }}
+      nodePort: {{ .Values.service.ports.ftp.nodePort }}
+      {{- end }}
+      protocol: TCP
+    - name: {{ .Values.app }}-sftp-port
+      port: {{ .Values.service.ports.sftp.port }}
+      targetPort: {{ .Values.service.ports.sftp.port }}
+      {{- if eq .Values.service.enableNodePort true }}
+      nodePort: {{ .Values.service.ports.sftp.nodePort }}
+      {{- end }}
+      protocol: TCP
+    {{- if .Values.configmap.filestorage.ftp.passive_mode.enable }}
+    {{- if eq .Values.service.enableNodePort true }}
+    {{- range untilStep (.Values.service.ports.ftp.passiveMin|int) (.Values.service.ports.ftp.passiveMax|int) 1 }}
+    - name: "tcp-{{ . }}"
+      port: {{ . }}
+      targetPort: {{ . }}    
+      nodePort: {{ . }}
+      protocol: TCP
+    {{- end }}
+    {{- else }}
+    {{- range untilStep (.Values.service.ports.ftp.passiveMin|int) (.Values.service.ports.ftp.passiveMax|int) 1 }}
+    - name: "tcp-{{ . }}"
+      port: {{ . }}
+      targetPort: {{ . }}    
+      protocol: TCP
+    {{- end }}
+    {{- end }}
+    {{- end }}

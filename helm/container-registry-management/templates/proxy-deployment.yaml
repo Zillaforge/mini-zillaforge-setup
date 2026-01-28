@@ -1,0 +1,79 @@
+{{- if .Values.proxy.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app }}-proxy-deployment
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.app }}-proxy
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app }}-proxy
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+    spec:
+      containers:
+      - name: {{ .Values.app }}-proxy
+        image: {{ .Values.images.containerregistrymanagement }}
+        imagePullPolicy: IfNotPresent
+        command: ["./ContainerRegistryManagement", "--proxy-config", "/etc/ASUS/proxy.yaml", "-c", "/etc/ASUS/container-registry-management.yaml","proxy","serve"]
+        ports:
+        - containerPort: {{ .Values.service.proxy.http.port }}
+        volumeMounts:
+        - name: host-ssl-ca-volume
+          mountPath: /etc/ssl/certs
+        - name: config-volume
+          mountPath: /etc/ASUS
+        - name: socket-volume
+          mountPath: /run
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.service.proxy.http.port }}
+          initialDelaySeconds: 10
+          periodSeconds: 15
+      - name: debugger
+        image: {{ .Values.images.debugger }}
+        volumeMounts:
+        - name: log-volume
+          mountPath: /var/log/ASUS
+      {{- if .Values.images.filebeat }}
+      - name: filebeat
+        image: {{ .Values.images.filebeat }}
+        command: ['filebeat', '-e', '-strict.perms=false', '--path.config', "/etc/filebeat"]
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        - name: filebeat-config
+          mountPath: /etc/filebeat/filebeat.yml
+          subPath: filebeat.yml
+      {{- end }}
+      volumes:
+      - name: host-ssl-ca-volume
+        hostPath:
+          path: /etc/ssl/certs
+          type: Directory
+      - name: config-volume
+        configMap:
+          name: {{ .Values.app }}-config
+      - name: plugin-volume
+        emptyDir: {}
+      - name: socket-volume
+        emptyDir: {}
+      - name: log-volume
+        emptyDir: {}
+      {{- if .Values.images.filebeat }}
+      - name: filebeat-config
+        configMap:
+          name: {{ .Values.app }}-filebeat-config
+      {{- end}}
+      # imagePullSecrets:
+      # - name: regcred
+{{- end }}

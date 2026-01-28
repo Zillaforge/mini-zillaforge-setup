@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.app }}-config
+data:
+  file-storage.yaml: |
+{{- toYaml .Values.configmap | nindent 4 }}

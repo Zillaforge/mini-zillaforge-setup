@@ -15,6 +15,8 @@ sudo mkdir -p /trusted-cloud/local/redis
 sudo mkdir -p /trusted-cloud/normal/site-storage
 sudo mkdir -p /trusted-cloud/normal/storage
 sudo mkdir -p /trusted-cloud/sensitivity/storage
+sudo mkdir -p /trusted-cloud/sensitivity/release
+sudo mkdir -p /trusted-cloud/sensitivity/exchange_public
 sudo chmod -R 775 /trusted-cloud
 
 echo "✅ Directories created"
@@ -46,6 +48,7 @@ sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/portal/values-admin-panel-public.yaml
 sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/ingress/ssscloudstorage.yaml
 sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/ingress/cloudstorage.yaml
 sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/cloud-storage/values-dss-public.yaml
+sed -i "s/hostip/$HOSTIP_DASH/g" ./helm/ingress/dataexchange.yaml
 
 echo "✅ Configuration files updated"
 

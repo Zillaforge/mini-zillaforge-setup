@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.app }}-assets
+binaryData:
+{{- range $path, $bytes := .Files.Glob "assets/assets.fld/*" }}
+{{ base $path | indent 2 }}: {{ ($.Files.Get $path) | b64enc }}
+{{ end }}

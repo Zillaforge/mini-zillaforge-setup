@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.app }}-config
+data:
+  metering-service-global.yaml: |
+{{- toYaml .Values.core.configmap | nindent 4 }}

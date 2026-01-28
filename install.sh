@@ -248,6 +248,9 @@ if command -v openstack &>/dev/null && [ -f "/etc/kolla/clouds.yaml" ]; then
 	# Update VRM configuration
 	sed -i "s#keystone_url#$KEYSTONE_URL#g" ./helm/vrm/values-trustedcloud.yaml
 
+	# Update APS configuration
+	sed -i "s#keystone_url#$KEYSTONE_URL#g" ./helm/app-playground-service/values-trustedcloud.yaml
+
 else
 	echo "⚠️ OpenStack not detected, EXIT"
 	exit 1
@@ -289,6 +292,11 @@ echo "waiting for APS deployments to be ready..."
 kubectl wait --for=condition=available deployment/app-playground-service-core-deployment --timeout=1200s
 
 echo "✅ APS installed"
+
+
+#MTS
+helm install mts ./helm/metering-service -f ./helm/metering-service/values-trustedcloud.yaml 
+echo "✅ MTS  installed"
 
 echo "=========================================="
 echo "Zillaforge Installation completed successfully!"

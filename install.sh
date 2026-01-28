@@ -298,6 +298,15 @@ echo "✅ APS installed"
 helm install mts ./helm/metering-service -f ./helm/metering-service/values-trustedcloud.yaml 
 echo "✅ MTS  installed"
 
+#FS
+echo "waiting for File Storge CS-system deployments to be ready..."
+helm install desfs ./helm/cloud-storage -f ./helm/cloud-storage/values-des-cs-rw.yaml 
+kubectl wait --for=condition=available deployment/data-exchange-service-fs-rw-deployment --timeout=1200s
+
+echo "install File Storge core"
+helm install descsrw ./helm/file-storage -f ./helm/file-storage/values-des-fs-rw.yaml
+echo "✅ File Storge  installed"
+
 echo "=========================================="
 echo "Zillaforge Installation completed successfully!"
 echo "All services including VPS and VRM have been installed!"

@@ -1,0 +1,31 @@
+{{- if .Values.persistence.enabled }}
+{{- $registry := .Values.persistence.persistentVolumeClaim.registry -}}
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: {{ template "harbor.registry" . }}-pv
+  annotations:
+  {{- range $key, $value := $registry.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- if eq .Values.persistence.resourcePolicy "keep" }}
+    helm.sh/resource-policy: keep
+  {{- end }}
+  labels:
+{{ include "harbor.labels" . | indent 4 }}
+    component: registry
+spec:
+  storageClassName: {{ template "harbor.registry" . }}-volume
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: {{ .Values.nodeAffinityPreset.key}}
+          operator: Exists
+  capacity:
+    storage: {{ $registry.size | quote }}
+  accessModes: 
+    - {{ $registry.accessMode }}
+  local:
+    path: {{ $registry.sharePath }}
+{{- end }}

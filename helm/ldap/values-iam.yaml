@@ -1,0 +1,57 @@
+app: ldap-service-iam
+
+images:
+  ldapservice: Zillaforge/ldapservice:0.0.5
+  debugger: Zillaforge/debugger:1.0.2
+
+configmap:
+  version: 0.0.5 #0.0.5-p1
+  kind: LDAPService
+  ldapservice:
+    instance: LDAPService-IAM
+    developer: true
+    host: 0.0.0.0:3891
+    allow_operations: ['*']
+    logger:
+      system_log:
+        path: /var/log/ASUS
+        max_size: 10
+        max_backups: 5
+        max_age: 10
+        compress: false
+        mode: debug
+        show_in_console: true
+    tracer:
+      enable: false
+      host: http://jaeger-service:14268/api/traces
+      timeout: 10
+  authentication:
+    service: myiam
+  verification:
+    iam:
+      namespaces: ["ci.asus.com"]
+      service: myiam
+    # ldap_proxy:
+    #   namespaces: ["iservice.nchc.org.tw"]
+    #   host: ldap://
+    #   account_by_extra: iservice.hostAccount
+    #   user_dn: cn=%s,ou=users,ou=trustedcloud,ou=unix,dc=iam,dc=nchc,dc=org,dc=tw
+    extended:
+      users:
+      - user_id: 
+        account: 
+        password: 
+        namespace: 
+        type: 
+  services:
+  - name: myiam
+    kind: iam
+    hosts: 
+    - iam-service:5051
+    tls:
+      enable: false
+      cert_path: /root/server-csr/IAM.pem
+    connection_per_host: 3
+
+service:
+  enableNodePort: false

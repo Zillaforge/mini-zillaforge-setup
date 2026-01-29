@@ -1,0 +1,54 @@
+{{- if .Values.jobScheduler.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app }}-jobscheduler-deployment
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.app }}-jobscheduler
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app }}-jobscheduler
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+    spec:
+      containers:
+      - name: {{ .Values.app }}-jobscheduler
+        image: {{ .Values.images.containerregistrymanagement }}
+        imagePullPolicy: IfNotPresent
+        command: ["./ContainerRegistryManagement", "--job-scheduler-config", "/etc/ASUS/job-scheduler.yaml", "-c", "/etc/ASUS/container-registry-management.yaml","job-scheduler","serve"]
+        volumeMounts:
+        - name: host-ssl-ca-volume
+          mountPath: /etc/ssl/certs
+        - name: config-volume
+          mountPath: /etc/ASUS
+        - name: socket-volume
+          mountPath: /run
+        - name: log-volume
+          mountPath: /var/log/ASUS
+      - name: debugger
+        image: {{ .Values.images.debugger }}
+        volumeMounts:
+        - name: log-volume
+          mountPath: /var/log/ASUS
+      volumes:
+      - name: host-ssl-ca-volume
+        hostPath:
+          path: /etc/ssl/certs
+          type: Directory
+      - name: config-volume
+        configMap:
+          name: {{ .Values.app }}-config
+      - name: plugin-volume
+        emptyDir: {}
+      - name: socket-volume
+        emptyDir: {}
+      - name: log-volume
+        emptyDir: {}
+      # imagePullSecrets:
+      # - name: regcred
+{{- end }}

@@ -1,0 +1,127 @@
+app: container-registry-management
+core:
+  enabled: true
+  configmap:
+    version: 0.1.3
+    kind: ContainerRegistryManagement
+    containerregistrymanagement:
+      instance: ContainerRegistryManagement
+      developer: true
+      grpc:
+        host: 0.0.0.0:5107
+        unix_socket: 
+          path: /run/ContainerRegistryManagement.sock
+          conn_count: 20
+      http:
+        host: 0.0.0.0:8107
+      logger:
+        system_log:
+          path: /var/log/ASUS
+          mode: debug
+        access_log:
+          path: /var/log/ASUS
+      scopes:
+        default_registry_storage_limit: 549755813888
+        project_extra_key: "iservice.projectSysCode"
+        availability_district: "tw-tc-ad1"
+      tracer:
+        enable: false
+        host: http://jaeger-service:14268/api/traces
+    services: 
+      - name: myiam
+        kind: iam
+        hosts:
+          - iam-service:5051
+        tls:
+          enable: false
+          cert_path: /root/server-csr/IAM.pem
+        connection_per_host: 1
+      - name: my_redis_sentinel
+        kind: redis_sentinel
+        hosts:
+        - redis-sentinel-service:26379
+        password: password
+        sentinel_password: ""
+        master_group_name: mymaster
+    authentication:
+      service: myiam
+    image_registry:
+      provider: harbor
+      harbor:
+        host: http://harbor.default.svc.cluster.local
+        timeout_sec: 60
+        username: admin
+        password: password
+    event_consume:
+      # service 輸入指定的 Service Name 或 empty(不啟動) 
+      service: my_redis_sentinel
+      redis_sentinel:
+        channels:
+        - FromIAM
+    littlebell:
+      host: http://simple-notification-service-service:8092
+      region: default
+      credential:
+        project_id: 
+        user_id: 
+      arn: 
+    metering_service:
+      account: user
+      password: password
+      host: rabbitmq:5672
+      manage_host: rabbitmq:15672
+      timeout: 5
+      rpc_timeout: 10
+      vhost: "/"
+      operation_connection_num: 2
+      channel_num: 1
+      replica_num: 0
+      consumer_connection_num: 1
+
+
+proxy:
+  enabled: false
+
+jobScheduler:
+  enabled: true
+  configmap:
+    version: 0.1.3
+    kind: JobScheduler
+    containerregistrymanagement:
+      instance: ContainerRegistryManagement-TrustCloud
+      scopes:
+        availability_district: "tw-tc-ad1"
+    jobscheduler:
+      instance: ContainerRegistryManagement-JobScheduler
+      logger:
+        system_log:
+          path: /var/log/ASUS
+      containerregistrymanagement:
+        grpc_hosts: [ "container-registry-management-core-service:5107" ]
+        connection_per_host: 1
+      tasks:
+        sync_projects:
+          cron_expression: "0 */10 * * * * *"
+        sync_image_registry_group:
+          cron_expression: "0 */11 * * * * *"
+        size_hard_limited_exceed:
+          cron_expression: "0 */10 * * * * *"
+        size_metering:
+          cron_expression: "0 0 * * * * *"
+          metering_service:
+            exchange: mts
+            routing_key: "crm-image-size"
+    services: 
+    - name: myiam
+      kind: iam
+      hosts:
+        - iam-service:5051
+      tls:
+        enable: false
+        cert_path: /root/server-csr/IAM.pem
+      connection_per_host: 3
+service:
+  core:
+    enableNodePort: true
+  proxy:
+    enableNodePort: false

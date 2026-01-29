@@ -1,0 +1,24 @@
+{{- if .Values.persistence.enabled }}
+{{- $redis := .Values.persistence.persistentVolumeClaim.redis -}}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ template "harbor.redis" . }}-pvc
+  annotations:
+  {{- range $key, $value := $redis.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- if eq .Values.persistence.resourcePolicy "keep" }}
+    helm.sh/resource-policy: keep
+  {{- end }}
+  labels:
+{{ include "harbor.labels" . | indent 4 }}
+    component: redis
+spec:
+  storageClassName: {{ template "harbor.redis" . }}-volume
+  accessModes: 
+    - {{ $redis.accessMode }}
+  resources:
+    requests:
+      storage: {{ $redis.size }}
+ {{- end }}

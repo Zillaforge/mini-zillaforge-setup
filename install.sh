@@ -290,6 +290,12 @@ kubectl wait --for=condition=available deployment/app-playground-service-core-de
 
 echo "✅ APS installed"
 
+#MTS
+
+helm install mts ./helm/metering-service -f ./helm/metering-service/values-trustedcloud.yaml 
+echo "✅ MTS  installed"
+
+
 echo "=========================================="
 echo "Zillaforge Installation completed successfully!"
 echo "All services including VPS and VRM have been installed!"

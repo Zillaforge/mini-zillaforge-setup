@@ -614,8 +614,8 @@ services:
 
 - connect_timeout: 60000
   enabled: true
-  host: data-exchange-service-fs-rw-service 
-  name: des-rw-service
+  host: data-exchange-service-cs-rw-service 
+  name: des-cs-service
   path: /
   port: 8080
   protocol: http
@@ -631,7 +631,7 @@ services:
     - PATCH
     - HEAD
     - OPTIONS
-    name: des-rw-auth
+    name: des-cs-auth
     path_handling: v1
     paths:
     - /des/cs/api/v1
@@ -666,7 +666,7 @@ services:
     methods:
     - GET
     - OPTIONS
-    name: des-rw-no-auth
+    name: des-cs-no-auth
     path_handling: v1
     paths:
     - /des/cs/api/v1/version
@@ -680,7 +680,7 @@ services:
     response_buffering: true
     strip_path: false
   tags:
-  - data-exchange-service-fs-rw-service 
+  - data-exchange-service-cs-rw-service 
   write_timeout: 60000
   
 - connect_timeout: 60000

@@ -38,11 +38,11 @@ configmap:
     #   user_dn: cn=%s,ou=users,ou=trustedcloud,ou=unix,dc=iam,dc=nchc,dc=org,dc=tw
     extended:
       users:
-      - user_id: 
-        account: 
-        password: 
-        namespace: 
-        type: 
+      - user_id: ffffffff-ffff-ffff-ffff-fffffffffffd
+        account: test2@trusted-cloud.nchc.org.tw
+        password: password123
+        namespace: ci.asus.com
+        type: password
   services:
   - name: myiam
     kind: iam

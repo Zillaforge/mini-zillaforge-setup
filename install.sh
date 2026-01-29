@@ -347,7 +347,7 @@ if [[ "$EXISTS" == "t" ]]; then
           psql -h localhost -U postgresqlusername -d forharbor -c "UPDATE schema_migrations SET dirty = false WHERE dirty = true;"
     fi
 fi
-
+kubectl exec -it redis-0 -- redis-cli -a password SLAVEOF NO ONE
 echo "✅ Harbor  installed"
 
 # CRM

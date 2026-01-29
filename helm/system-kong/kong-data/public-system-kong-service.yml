@@ -611,3 +611,145 @@ services:
   tags:
   - audit-track-service-core-service
   write_timeout: 60000
+
+- connect_timeout: 60000
+  enabled: true
+  host: data-exchange-service-cs-rw-service 
+  name: des-cs-service
+  path: /
+  port: 8080
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+  - https_redirect_status_code: 426
+    methods:
+    - GET
+    - POST
+    - DELETE
+    - PUT
+    - PATCH
+    - HEAD
+    - OPTIONS
+    name: des-cs-auth
+    path_handling: v1
+    paths:
+    - /des/cs/api/v1
+    plugins:
+    - config:
+        enable_json_header: null
+        enable_permission_validate: null
+        enable_raw_header: true
+        enable_url_encode: null
+        hosts:
+        - iam-service:5051
+        redirect_types: null
+        redirect_url: null
+        token_key_in_cookie: null
+        verified_service: null
+      enabled: true
+      name: kong-auth-plugin
+      protocols:
+      - grpc
+      - grpcs
+      - http
+      - https
+    preserve_host: false
+    protocols:
+    - http
+    - https
+    regex_priority: 0
+    request_buffering: true
+    response_buffering: true
+    strip_path: false
+  - https_redirect_status_code: 426
+    methods:
+    - GET
+    - OPTIONS
+    name: des-cs-no-auth
+    path_handling: v1
+    paths:
+    - /des/cs/api/v1/version
+    - /des/cs/api/v1/scopes
+    preserve_host: false
+    protocols:
+    - http
+    - https
+    regex_priority: 0
+    request_buffering: true
+    response_buffering: true
+    strip_path: false
+  tags:
+  - data-exchange-service-cs-rw-service 
+  write_timeout: 60000
+  
+- connect_timeout: 60000
+  enabled: true
+  host: container-registry-management-core-service 
+  name: crm-core-service
+  path: /
+  port: 8107
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+  - https_redirect_status_code: 426
+    methods:
+    - GET
+    - POST
+    - DELETE
+    - PUT
+    - PATCH
+    - HEAD
+    - OPTIONS
+    name: crm-core-auth
+    path_handling: v1
+    paths:
+    - /crm/api/v1
+    plugins:
+    - config:
+        enable_json_header: null
+        enable_permission_validate: null
+        enable_raw_header: true
+        enable_url_encode: null
+        hosts:
+        - iam-service:5051
+        redirect_types: null
+        redirect_url: null
+        token_key_in_cookie: null
+        verified_service: null
+      enabled: true
+      name: kong-auth-plugin
+      protocols:
+      - grpc
+      - grpcs
+      - http
+      - https
+    preserve_host: false
+    protocols:
+    - http
+    - https
+    regex_priority: 0
+    request_buffering: true
+    response_buffering: true
+    strip_path: false
+  - https_redirect_status_code: 426
+    methods:
+    - GET
+    - OPTIONS
+    name: crm-core-no-auth
+    path_handling: v1
+    paths:
+    - /crm/api/v1/version
+    - /crm/api/v1/scopes
+    preserve_host: false
+    protocols:
+    - http
+    - https
+    regex_priority: 0
+    request_buffering: true
+    response_buffering: true
+    strip_path: false
+  tags:
+  - container-registry-management-core-service
+  write_timeout: 60000

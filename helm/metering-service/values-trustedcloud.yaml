@@ -1,0 +1,234 @@
+app: metering-service
+
+images:
+  mts: Zillaforge/metering-service:0.6.11
+  debugger: Zillaforge/debugger:1.0.2
+  filebeat: docker.io/elastic/filebeat:8.14.3
+
+core:
+  enabled: true
+  configmap:
+    version: 0.6.11
+    kind: MeteringService
+    MeteringService:
+      instance: MeteringService-TrustCloud
+      http_host: 0.0.0.0:8090
+      logger:
+        system_log:
+          path: /var/log/ASUS/
+          mode: info
+          max_size: 10
+          max_backups: 5
+          max_age: 10
+          compress: false
+          show_in_console: true
+      queue:
+        - aps-application
+        # - cks-cluster
+        # - cks-worker
+        # - cks-load-balance
+        # - cks-data-storage
+        # - cks-share-storage
+        # - crm-image-size
+        - dss-public-data-storage
+        # - dss-private-data-storage
+        - des-data-storage
+        # drs-data-storage
+        # - rds-job
+        # - rds-resource
+        - vps-vm
+        - vps-vm-root-disk
+        - vps-vm-floating-ip
+        - vps-volume
+        - vps-network
+        - vps-load-balance
+        - vps-share-storage
+        - vps-auto-scaling-group
+        - vrm-image-count
+        - vrm-image-size
+      dead_letter_queue_flush: true
+    s3: 
+      enable: true
+      provider: "meteringService" # IService(old version)
+      root: "mts"
+      host: http://site-storage-service-service:8080
+      region: default
+      user_id: ac94ca3c-2376-43df-a5e2-2e2c39595630
+      project_id: 14735dfa-5553-46cc-b4bd-405e711b223f
+    message_queue:
+      # provider supported: rabbitmq
+      provider: rabbitmq
+      rabbitmq:
+        account: user
+        password: password
+        host: rabbitmq:5672
+        manage_host: rabbitmq:15672
+        timeout: 5
+        rpc_timeout: 10
+        vhost: "/"
+        operation_connection_num: 3
+        channel_num: 10
+        replica_num: 0
+        consumer_connection_num: 46
+    rabbitmq_publish:
+      enable: false #########################################
+      connection:
+        kind: trustedcloud
+        account: user
+        password: password
+        host: rabbitmq:5672
+        manage_host: rabbitmq:15672
+        timeout: 5
+        rpc_timeout: 10
+        # vhost: "iService"
+        operation_connection_num: 3
+        channel_num: 10
+        replica_num: 0
+        consumer_connection_num: 10
+      publish:
+        ###
+        #  Compute (VM)
+        ###
+        - name: aps-application
+          exchange: "L-VM"
+          routing_key: "VIRTUAL_MACHINE"
+          template: "templates/publish/aps-application.tpl"
+        - name: cks-cluster
+          exchange: "L-VM"
+          routing_key: "VIRTUAL_MACHINE"
+          template: "templates/publish/cks-cluster.tpl"
+          repeatedly: extra.masterCount
+        - name: cks-worker
+          exchange: "L-VM"
+          routing_key: "VIRTUAL_MACHINE"
+          template: "templates/publish/cks-worker.tpl"
+        - name: vps-auto-scaling-group
+          exchange: "L-VM"
+          routing_key: "VIRTUAL_MACHINE"
+          template: "templates/publish/vps-auto-scaling-group.tpl"
+        - name: vps-vm
+          exchange: "L-VM"
+          routing_key: "VIRTUAL_MACHINE"
+          template: "templates/publish/vps-vm.tpl"
+        ###
+        #  storage type1 (VM Volume)
+        ###
+        - name: cks-data-storage
+          exchange: "L-STORAGE"
+          routing_key: "STORAGE_VDS"
+          template: "templates/publish/cks-data-storage.tpl"
+        - name: cks-share-storage
+          exchange: "L-STORAGE"
+          routing_key: "STORAGE_VDS"
+          template: "templates/publish/cks-share-storage.tpl"
+        - name: vps-share-storage
+          exchange: "L-STORAGE"
+          routing_key: "STORAGE_VDS"
+          template: "templates/publish/vps-share-storage.tpl"
+        - name: vps-vm-root-disk
+          exchange: "L-STORAGE"
+          routing_key: "STORAGE_VDS"
+          template: "templates/publish/vps-vm-root-disk.tpl"
+        - name: vps-volume
+          exchange: "L-STORAGE"
+          routing_key: "STORAGE_VDS"
+          template: "templates/publish/vps-volume.tpl"
+        ###
+        #  storage type2 (project-based)
+        ###
+        - name: crm-image-size
+          exchange: "L-STORAGE"
+          routing_key: "STORAGE_VDS"
+          template: "templates/publish/crm-image-size.tpl"
+        - name: dss-public-data-storage
+          exchange: "L-STORAGE"
+          routing_key: "STORAGE_VDS"
+          template: "templates/publish/dss-public-data-storage.tpl"
+        - name: dss-private-data-storage
+          exchange: "L-STORAGE"
+          routing_key: "STORAGE_VDS"
+          template: "templates/publish/dss-private-data-storage.tpl"
+        - name: des-data-storage
+          exchange: "L-STORAGE"
+          routing_key: "STORAGE_VDS"
+          template: "templates/publish/des-data-storage.tpl"
+        - name: drs-data-storage
+          exchange: "L-STORAGE"
+          routing_key: "STORAGE_VDS"
+          template: "templates/publish/drs-data-storage.tpl"
+        - name: rds-resource
+          exchange: "L-STORAGE"
+          routing_key: "STORAGE_VDS"
+          template: "templates/publish/rds-resource.tpl"
+        - name: vrm-image-size
+          exchange: "L-STORAGE"
+          routing_key: "STORAGE_VDS"
+          template: "templates/publish/vrm-image-size.tpl"
+        ###
+        #  hpc
+        ###
+        - name: rds-job
+          exchange: "L-HPC"
+          routing_key: "HPC_CMD_LINE"
+          template: "templates/publish/rds-job.tpl"
+    authentication:
+      service: myiam 
+    services:
+      - name: myiam
+        kind: iam
+        hosts:
+          - iam-service:5051
+        tls:
+          enable: false
+          cert_path: /root/server-csr/IAM.pem
+        connection_per_host: 3
+    reporters:
+      assets_path: "/var/lib/ASUS/metering-service/assets"
+      templates_path: "templates/reports"
+      templates:
+        - "trustedcloud.aps-application-metering"
+        - "trustedcloud.cks-cluster-metering"
+        - "trustedcloud.cks-worker-metering"
+        - "trustedcloud.cks-load-balance-metering"
+        - "trustedcloud.cks-data-storage-metering"
+        - "trustedcloud.cks-share-storage-metering"
+        - "trustedcloud.crm-image-size-metering"
+        - "trustedcloud.dss-public-data-storage-metering"
+        - "trustedcloud.dss-private-data-storage-metering"
+        - "trustedcloud.des-data-storage-metering"
+        - "trustedcloud.drs-data-storage-metering"
+        - "trustedcloud.rds-job-metering"
+        - "trustedcloud.rds-resource-metering"
+        - "trustedcloud.vps-vm-metering"
+        - "trustedcloud.vps-vm-root-disk-metering"
+        - "trustedcloud.vps-vm-floating-ip-metering"
+        - "trustedcloud.vps-volume-metering"
+        - "trustedcloud.vps-network-metering"
+        - "trustedcloud.vps-load-balance-metering"
+        - "trustedcloud.vps-share-storage-metering"
+        - "trustedcloud.vps-auto-scaling-group-metering"
+        - "trustedcloud.vrm-image-count-metering"
+        - "trustedcloud.vrm-image-size-metering"
+
+service:
+  core:
+    enableNodePort: false
+    externalIPs: []
+    http:
+      port: 8090
+      nodePort: 32090
+
+serviceMonitor:
+  enable: false
+
+elasticSearch:
+  hosts: ["http://elasticsearch-es-http.elastic-stack.svc.cluster.local:9200"]
+  index: accesslog-%{[service.auditLogName]}
+#   protocol: "https"
+  pipeline: pipeline-%{[service.auditLogName]}
+#   preset: balanced
+  username: "elastic"
+  password: "password"
+#   ssl:
+#     enabled: false
+#     verification_mode: none

@@ -1,0 +1,174 @@
+app: data-exchange-service-fs-rw
+
+images:
+  filestorage: Zillaforge/file-storage:0.1.3
+  eventpublishPlugin: Zillaforge/event-publish-plugin:0.1.2
+  debugger: Zillaforge/debugger:1.0.2
+  filebeat: elastic/filebeat:8.14.3
+
+configmap:
+  version: 0.1.3
+  kind: FileStorage
+  filestorage:
+    instance: Data-Exchange-Service(FS-RW)
+    developer: true
+    logger:
+      system_log:
+        path: /var/log/ASUS
+        mode: debug
+      access_log:
+        path: /var/log/ASUS
+      event_consume_log:
+        path: /var/log/ASUS
+    tracer:
+      enable: false
+      host: http://jaeger-service:14268/api/traces
+      timeout: 10
+    ftp:
+      enable: true
+      port: 21
+      root_path: /var/lib/ASUS/filestorage/data/ ######
+      tls:
+        enable: false
+        cert_path: 
+        key_path: 
+      passive_mode:
+        enable: false
+        public_ip: public_ip
+        passive_ports: 30200-30300
+    sftp:
+      enable: false
+      host: 0.0.0.0:22
+      root_path: /var/lib/ASUS/filestorage/data/
+      host_key_path: 
+      account_by_extra: iservice.hostAccount
+    # system_buckets 在 List Projects 層時不會顯示
+    system_buckets:
+    - "mlflow"
+    - "system"
+    # system_buckets 在 List Buckets 或 Directory 層時不會顯示
+    system_folders:
+    - "_tmp"
+    scopes:
+      # access_mode 目前支援 rw 與 ro 兩種模式
+      access_mode: rw
+      project_extra_key: "iservice.projectSysCode"
+      availability_district: "tw-tc-ad1"
+    use_default_bucket_acls: true
+    default_bucket_acls:
+      # format: <group>:<permission>
+      # group supported: all_users, authenticated_users
+      # permission supported: read, write, read_acp, write_acp, full_control
+      - authenticated_users:read
+      - authenticated_users:write
+    role_acls:
+      # tenant_admin, tenant_owner, bucket_creator
+      # format: <permission>
+      # permission supported: read, write, read_acp, write_acp, full_control
+      tenant_admin:
+      # - full_control
+      tenant_owner:
+      # - full_control
+      bucket_creator:
+      - full_control
+  authentication:
+    service: pegasus-cloud-iamserver
+    ldap:
+      host: ldap://ldap-service-iam-service:3891
+      search_by_extra_account: iservice.hostAccount
+    otp:
+      enable: false
+      rules:
+      - namespace: ci.asus.com
+        mode: basic
+      - namespace: iservice.nchc.org.tw
+        mode: iservice
+        application: WebAPI_cloud
+        application_credential: password
+        host: https://
+  services:
+  - name: pegasus-cloud-iamserver
+    kind: iam
+    hosts:
+    - iam-service:5051
+    tls:
+      enable: false
+      cert_path: /root/server-csr/IAM.pem
+    connection_per_host: 3
+  - name: pegasus-cloud-csserver
+    kind: cs
+    hosts:
+    - data-exchange-service-cs-rw-service:5052 ##############
+    tls:
+      enable: false
+      cert_path: /root/server-csr/CS.pem
+    connection_per_host: 3
+  event_publish:
+    plugins:
+    - name: EventPublishPlugin
+      type: grpc
+      binary_path: "/var/lib/ASUS/filestorage/eventpublish/eventpublishplugin"
+      config_path: "/var/lib/ASUS/filestorage/eventpublish/config/eventpublishplugin.yaml"
+      socket_path: /run/eventpublishplugin.sock
+      start_cmd_args:
+        --redis-channel: FromFS
+
+eventpublish:
+  eventpublishPlugin:
+    plugin:
+      name: EventPublishPlugin
+      instance: Data-Exchange-Service(FS-RW) - EventPublishPlugin
+      version: 0.1.2
+      socket_path: "/run/eventpublishplugin.sock"
+      logger:
+        system_log:
+          path: /var/log/ASUS
+          max_size: 10
+          max_backups: 5
+          max_age: 10
+          compress: false
+          mode: debug
+          show_in_console: true
+        event_log:
+          path: /var/log/ASUS
+          max_size: 10
+          max_backups: 5
+          max_age: 10
+      tracer:
+        enable: false
+        collector_endpoint: http://jaeger-service:14268/api/traces
+        timeout: 10
+      service: my_redis_sentinel
+      services:
+      - name: my_redis_sentinel
+        kind: redis_sentinel
+        hosts:
+        - redis-sentinel-service:26379
+        password: password
+        master_group_name: mymaster
+
+service:
+  enableNodePort: true
+
+volume:
+  type: local
+  local:
+    path: /trusted-cloud/sensitivity/exchange_public
+
+serviceMonitor:
+  enable: false
+
+deployment:
+  spec:
+
+elasticSearch:
+  hosts: ["http://elasticsearch-es-http.elastic-stack.svc.cluster.local:9200"]
+  index: accesslog-%{[service.auditLogName]}
+#   protocol: "https"
+  pipeline: pipeline-%{[service.auditLogName]}
+#   preset: balanced
+  username: "elastic"
+  password: "password"
+#   ssl:
+#     enabled: false
+#     verification_mode: none

@@ -1,0 +1,24 @@
+{{- if .Values.proxy.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.app }}-proxy-service
+  namespace: {{ .Values.namespace }}
+spec:
+  {{- if eq .Values.service.proxy.enableNodePort true }}
+  type: NodePort
+  {{- end }}
+  {{- if .Values.service.proxy.externalIPs }}
+  externalIPs: {{ .Values.service.proxy.externalIPs }}
+  {{- end }}
+  selector:
+    app: {{ .Values.app }}-proxy
+  ports:
+    - name: http-port
+      port: {{ .Values.service.proxy.http.port }}
+      targetPort: {{ .Values.service.proxy.http.port }}
+      {{- if eq .Values.service.proxy.enableNodePort true }}
+      nodePort: {{ .Values.service.proxy.http.nodePort }}
+      {{- end }}
+      protocol: TCP
+{{- end }}

@@ -1,0 +1,119 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app }}-deployment
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.app }}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app }}
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+    spec:
+      automountServiceAccountToken: true
+      initContainers:
+      {{- if .Values.images.eventpublishPlugin }}
+      - name: event-publish-plugin
+        image: {{ .Values.images.eventpublishPlugin }}
+        imagePullPolicy: IfNotPresent
+        command: ['/bin/sh', '-c', "cp -r /plugin/* /var/lib/ASUS/filestorage/eventpublish"]
+        volumeMounts:
+        - name: eventpublish-plugin-volume
+          mountPath: /var/lib/ASUS/filestorage/eventpublish
+        - name: eventpublish-volume
+          mountPath: /plugin/config/eventpublishplugin.yaml
+          subPath: eventpublishplugin.yaml
+      {{- end }}
+      containers:
+      - name: {{ .Values.app }}
+        image: {{ .Values.images.filestorage }}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: {{ .Values.service.ports.ftp.port }}
+        {{- if .Values.configmap.filestorage.ftp.passive_mode.enable }}
+        {{- range untilStep (.Values.service.ports.ftp.passiveMin|int) (.Values.service.ports.ftp.passiveMax|int) 1 }}
+        - containerPort: {{ . }}
+        {{- end }}
+        {{- end }}
+        - containerPort: {{ .Values.service.ports.sftp.port }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/ASUS
+        - name: socket-volume
+          mountPath: /run
+        - name: plugin-volume
+          mountPath: /var/lib/ASUS/filestorage/plugin/event_publish
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        - name: data-volume
+          mountPath: {{ .Values.configmap.filestorage.ftp.root_path }}
+        - name: eventpublish-plugin-volume
+          mountPath: /var/lib/ASUS/filestorage/eventpublish
+        - name: certificate-volume
+          mountPath: /var/lib/ASUS/filestorage/ftp
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.service.ports.ftp.port }}
+          initialDelaySeconds: 10
+          periodSeconds: 15
+      {{- if .Values.images.debugger }}
+      - name: debugger
+        image: {{ .Values.images.debugger }}
+        volumeMounts:
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        - name: data-volume
+          mountPath: {{ .Values.configmap.filestorage.ftp.root_path }}
+        - name: eventpublish-plugin-volume
+          mountPath: /var/lib/ASUS/filestorage/eventpublish
+        - name: certificate-volume
+          mountPath: /var/lib/ASUS/filestorage/ftp
+      {{- end }}
+      {{- if .Values.images.filebeat }}
+      - name: filebeat
+        image: {{ .Values.images.filebeat }}
+        command: ['filebeat', '-e', '-strict.perms=false', '--path.config', "/etc/filebeat"]
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+        - name: log-volume
+          mountPath: /var/log/ASUS
+        - name: filebeat-config
+          mountPath: /etc/filebeat/filebeat.yml
+          subPath: filebeat.yml
+      {{- end }}
+      volumes:
+      - name: config-volume
+        configMap:
+          name: {{ .Values.app }}-config
+      - name: eventpublish-volume
+        configMap:
+          name: {{ .Values.app }}-eventpublish-config
+      - name: eventpublish-plugin-volume
+        emptyDir: {}
+      - name: log-volume
+        emptyDir: {}
+      - name: plugin-volume
+        emptyDir: {}
+      - name: socket-volume
+        emptyDir: {}
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: {{ .Values.app }}-pvc
+      {{- if .Values.images.filebeat }}
+      - name: filebeat-config
+        configMap:
+          name: {{ .Values.app }}-filebeat-config
+      {{- end }}
+      - name: certificate-volume
+        configMap:
+          name: {{ .Values.app }}-upstream-certificate
+      {{- if .Values.deployment.spec }}
+      {{- toYaml .Values.deployment.spec | nindent 6 }}
+      {{- end }}
+      # imagePullSecrets:
+      # - name: regcred

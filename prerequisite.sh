@@ -80,7 +80,25 @@ sudo systemctl daemon-reload
 sudo systemctl restart docker
 systemctl status --no-pager docker
 
+# Install docker plugin
+## Add Docker's official GPG key:
+sudo apt update
+sudo apt install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
 
+## Add the repository to Apt sources:
+sudo tee /etc/apt/sources.list.d/docker.sources <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/ubuntu
+Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+Components: stable
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+
+sudo apt update
+sudo apt-get install  -y docker-buildx-plugin docker-compose-plugin
 
 # Essential Tweaks
 sudo swapoff -a
@@ -173,8 +191,15 @@ done
 
 echo "All builds completed successfully!"
 
+## build and save slurm image
+cd /tmp
+git clone https://github.com/ogre0403/slurm-docker-cluster.git
+cd slurm-docker-cluster
+sudo make build
+
+
 # Clean up base images
-base_images=("kong-plugin-base" "ubuntu" "nginx" "alpine" "busybox" "node")
+base_images=("kong-plugin-base" "ubuntu" "nginx" "alpine" "busybox" "node" "rockylinux/rockylinux")
 
 echo "Cleaning up base images..."
 
@@ -196,7 +221,7 @@ echo "Base image cleanup completed!"
 echo "💾 Saving Zillaforge images as tar files..."
 cd /tmp
 
-sudo docker images --format "{{.Repository}}:{{.Tag}}" | grep "^Zillaforge/" | grep -v "Zillaforge/golang" | while read image_tag; do
+sudo docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "^(Zillaforge/|slurm-docker-cluster)" | grep -v "Zillaforge/golang" | while read image_tag; do
     repo_name=$(echo "$image_tag" | cut -d'/' -f2 | cut -d':' -f1)
     tag_name=$(echo "$image_tag" | cut -d':' -f2)
     filename="${repo_name}_${tag_name}.tar"

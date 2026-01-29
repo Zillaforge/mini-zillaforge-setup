@@ -1,0 +1,119 @@
+{{- if .Values.slurmdbd.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: slurmdbd
+  namespace: {{ .Values.namespace.name }}
+spec:
+  ports:
+    - port: {{ .Values.slurmdbd.service.port }}
+      targetPort: {{ .Values.slurmdbd.service.port }}
+  selector:
+    app: slurmdbd
+  type: {{ .Values.slurmdbd.service.type }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: slurmdbd
+  namespace: {{ .Values.namespace.name }}
+spec:
+  replicas: {{ .Values.slurmdbd.replicas }}
+  selector:
+    matchLabels:
+      app: slurmdbd
+  template:
+    metadata:
+      labels:
+        app: slurmdbd
+    spec:
+      initContainers:
+        - name: init-and-wait
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z mysql 3306; do
+                echo "Waiting for MySQL to be ready..."
+                sleep 2
+              done
+              dd if=/dev/random of=/etc/slurm/jwt_hs256.key bs=32 count=1
+          volumeMounts:
+            - name: jwt-pvc
+              mountPath: /etc/slurm
+            - name: init-script
+              mountPath: /scripts
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "50m"
+      hostname: slurmdbd
+      containers:
+        - name: slurmdbd
+          image: {{ .Values.slurmdbd.image.repository }}:{{ .Values.slurmdbd.image.tag }}
+          imagePullPolicy: {{ .Values.slurmdbd.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              sh /scripts/slurm-init.sh
+              cp /tmp/jwt-pvc/jwt_hs256.key /etc/slurm/
+              chown slurm:slurm /etc/slurm/jwt_hs256.key
+              chmod 0600 /etc/slurm/jwt_hs256.key
+              /usr/local/bin/docker-entrypoint.sh slurmdbd
+          ports:
+            - containerPort: {{ .Values.slurmdbd.service.port }}
+          env:
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: slurm-credentials
+                  key: MYSQL_USER
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: slurm-credentials
+                  key: MYSQL_PASSWORD
+          volumeMounts:
+            - name: jwt-pvc
+              mountPath: /tmp/jwt-pvc
+              readOnly: true
+            - name: init-script
+              mountPath: /scripts
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - pidof slurmdbd
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - pidof slurmdbd
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: {{ .Values.slurmdbd.resources.requests.memory | quote }}
+              cpu: {{ .Values.slurmdbd.resources.requests.cpu | quote }}
+            limits:
+              memory: {{ .Values.slurmdbd.resources.limits.memory | quote }}
+              cpu: {{ .Values.slurmdbd.resources.limits.cpu | quote }}
+      volumes:
+        - name: jwt-pvc
+          persistentVolumeClaim:
+            claimName: jwt-pvc
+        - name: init-script
+          configMap:
+            name: slurm-init-script
+            defaultMode: 0755
+{{- end }}

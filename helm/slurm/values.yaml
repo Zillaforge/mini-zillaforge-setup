@@ -1,0 +1,120 @@
+global:
+  namespace: slurm
+
+# Namespace configuration
+namespace:
+  create: true
+  name: slurm
+
+# Storage configuration
+storage:
+  storageClassName: standard
+  jobdir:
+    size: 10Gi
+  mysql:
+    size: 5Gi
+  jwt:
+    size: 1Gi
+
+# Secret configuration
+secrets:
+  mysqlRootPassword: slurm_root_password
+  mysqlDatabase: slurm_acct_db
+  mysqlUser: slurm
+  mysqlPassword: password
+  sshPublicKey: "" # SSH public key from host, can be loaded from ~/.ssh/id_rsa.pub
+
+# MySQL/MariaDB configuration
+mysql:
+  enabled: true
+  image:
+    repository: mariadb
+    tag: "12"
+    pullPolicy: IfNotPresent
+  replicas: 1
+  service:
+    type: ClusterIP
+    port: 3306
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# slurmdbd configuration
+slurmdbd:
+  enabled: true
+  image:
+    repository: slurm-docker-cluster
+    tag: "25.05.3"
+    pullPolicy: IfNotPresent
+  replicas: 1
+  service:
+    type: ClusterIP
+    port: 6819
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# slurmctld configuration
+slurmctld:
+  enabled: true
+  image:
+    repository: slurm-docker-cluster
+    tag: "25.05.3"
+    pullPolicy: IfNotPresent
+  replicas: 1
+  service:
+    type: NodePort
+    slurmPort: 6817
+    sshPort: 22
+    sshNodePort: 30022
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+
+# slurmrestd configuration
+slurmrestd:
+  enabled: true
+  image:
+    repository: slurm-docker-cluster
+    tag: "25.05.3"
+    pullPolicy: IfNotPresent
+  replicas: 1
+  service:
+    type: NodePort
+    port: 6820
+    nodePort: 30820
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# Compute nodes configuration
+computeNodes:
+  enabled: true
+  count: 2
+  image:
+    repository: slurm-docker-cluster
+    tag: "25.05.3"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"

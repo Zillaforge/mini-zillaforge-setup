@@ -1,0 +1,143 @@
+{{- if .Values.slurmctld.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: slurmctld
+  namespace: {{ .Values.namespace.name }}
+spec:
+  type: {{ .Values.slurmctld.service.type }}
+  ports:
+    - name: slurm
+      port: {{ .Values.slurmctld.service.slurmPort }}
+      targetPort: {{ .Values.slurmctld.service.slurmPort }}
+    - name: ssh
+      port: {{ .Values.slurmctld.service.sshPort }}
+      targetPort: {{ .Values.slurmctld.service.sshPort }}
+      nodePort: {{ .Values.slurmctld.service.sshNodePort }}
+  selector:
+    app: slurmctld
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: slurmctld
+  namespace: {{ .Values.namespace.name }}
+spec:
+  replicas: {{ .Values.slurmctld.replicas }}
+  selector:
+    matchLabels:
+      app: slurmctld
+  template:
+    metadata:
+      labels:
+        app: slurmctld
+    spec:
+      initContainers:
+        - name: init-and-wait
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z slurmdbd 6819; do
+                echo "Waiting for slurmdbd to be ready..."
+                sleep 2
+              done
+          volumeMounts:
+            - name: init-script
+              mountPath: /scripts
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "50m"
+      hostname: slurmctld
+      containers:
+        - name: slurmctld
+          image: {{ .Values.slurmctld.image.repository }}:{{ .Values.slurmctld.image.tag }}
+          imagePullPolicy: {{ .Values.slurmctld.image.pullPolicy }}
+          env:
+            - name: SSH_ENABLE
+              value: "true"
+          command:
+            - sh
+            - -c
+            - |
+              sh /scripts/slurm-init.sh
+              cp /tmp/jwt-pvc/jwt_hs256.key /etc/slurm/
+              chown slurm:slurm /etc/slurm/jwt_hs256.key
+              chmod 0600 /etc/slurm/jwt_hs256.key
+              /usr/local/bin/docker-entrypoint.sh slurmctld
+          ports:
+            - containerPort: {{ .Values.slurmctld.service.slurmPort }}
+            - containerPort: {{ .Values.slurmctld.service.sshPort }}
+          workingDir: /data
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: jobdir
+              mountPath: /data
+            - name: jwt-pvc
+              mountPath: /tmp/jwt-pvc
+              readOnly: true
+            - name: init-script
+              mountPath: /scripts
+            - name: job-script
+              mountPath: /jobs
+{{- if .Values.secrets.sshPublicKey }}
+            - name: ssh-public-key
+              mountPath: /root/.ssh/authorized_keys
+              subPath: authorized_keys 
+              readOnly: true
+{{- end }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - scontrol ping
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - scontrol ping
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: {{ .Values.slurmctld.resources.requests.memory | quote }}
+              cpu: {{ .Values.slurmctld.resources.requests.cpu | quote }}
+            limits:
+              memory: {{ .Values.slurmctld.resources.limits.memory | quote }}
+              cpu: {{ .Values.slurmctld.resources.limits.cpu | quote }}
+      volumes:
+        - name: jobdir
+          persistentVolumeClaim:
+            claimName: slurm-jobdir-pvc
+        - name: jwt-pvc
+          persistentVolumeClaim:
+            claimName: jwt-pvc
+        - name: init-script
+          configMap:
+            name: slurm-init-script
+            defaultMode: 0755
+        - name: job-script
+          configMap:
+            name: slurm-job-script
+            defaultMode: 0755
+{{- if .Values.secrets.sshPublicKey }}
+        - name: ssh-public-key
+          secret:
+            secretName: slurm-credentials
+            items:
+              - key: SSH_PUBLIC_KEY
+                path: authorized_keys
+                mode: 0400
+{{- end }}
+{{- end }}

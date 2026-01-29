@@ -73,6 +73,16 @@ kubectl patch service traefik -n kube-system \
 
 echo "✅ Traefik service patched with NodePort 31111 and 32222"
 
+# Install Slurm Cluster
+echo "Install Slurm cluster..."
+sudo apparmor_parser -R  /etc/apparmor.d/unix-chkpwd
+# generate SSH key under ubuntu user
+rm -f ~/.ssh/id_ed25519 ~/.ssh/id_ed25519.pub
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -q
+helm install slurm ./helm/slurm -f ./helm/slurm/values-trustedcloud.yaml --set secrets.sshPublicKey="$(cat $HOME/.ssh/id_ed25519.pub)"
+echo "waiting for Slurm cluster to be ready..."
+kubectl -n=slurm wait --for=condition=available deployment/slurmrestd --timeout=1200s
+
 # Install message queue
 echo "🐰 Installing RabbitMQ..."
 helm install rabbitmq oci://registry-1.docker.io/bitnamicharts/rabbitmq -f ./helm/rabbit_values.yaml --set image.repository=bitnamilegacy/rabbitmq --set global.security.allowInsecureImages=true

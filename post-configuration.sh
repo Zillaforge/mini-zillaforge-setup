@@ -89,6 +89,30 @@ openstack image create "manila-service-image" \
 # create manila share type
 echo "Create manila share type and enable DHSS mode"
 openstack share type create default_share_type True
+
+
+## Octavia setup
+
+# unset openstack admin config
+unset OS_CLIENT_CONFIG_FILE
+unset OS_CLOUD
+
+# IMPORTANT: MUST use octavia configure to create image
+source /etc/kolla/octavia-openrc.sh
+
+# Download pre-build octavia image
+echo "📥 Adding Octavia service image to OpenStack..."
+if [ ! -f "octavia-amphora-haproxy-2025.1.qcow2" ]; then
+  wget https://nbg1.your-objectstorage.com/osism/openstack-octavia-amphora-image/octavia-amphora-haproxy-2025.1.qcow2
+fi
+
+openstack image create "amphora-x64-haproxy" \
+  --file octavia-amphora-haproxy-2025.1.qcow2 \
+  --disk-format qcow2 \
+  --container-format bare \
+  --private  \
+  --tag amphora
+
 set -e
 
 # deactivate

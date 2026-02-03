@@ -92,6 +92,14 @@ openstack share type create default_share_type True
 
 
 ## Octavia setup
+
+# unset openstack admin config
+unset OS_CLIENT_CONFIG_FILE
+unset OS_CLOUD
+
+# IMPORTANT: MUST use octavia configure to create image
+source /etc/kolla/octavia-openrc.sh
+
 # Download pre-build octavia image
 echo "📥 Adding Octavia service image to OpenStack..."
 if [ ! -f "octavia-amphora-haproxy-2025.1.qcow2" ]; then
